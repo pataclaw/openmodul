@@ -1,0 +1,289 @@
+/* OM-27 (1981) — Beat-up plastic Omnichord, textured & worn
+   The real thing: silver-grey ABS plastic, blue/red/yellow buttons,
+   decades of finger oil, scuffs, and yellowed plastic */
+:root {
+  /* Page & body — dark desk surface */
+  --page-bg: #2a2520;
+  --bezel-bg: #8e8a7e;
+
+  /* Body — yellowed silver-grey plastic */
+  --body-bg: #a09a8c;
+  --body-bg-secondary: #a8a294;
+  --body-border: #7a7568;
+
+  /* Buttons — worn plastic */
+  --btn-bg: #928c80;
+  --btn-bg-hover: #9a9488;
+  --btn-active: #c4332a;
+  --btn-text: #1c1a16;
+  --btn-border: #6e6a5e;
+  --btn-radius: 4px;
+
+  /* Chord buttons — faded 80s colors */
+  --chord-maj-bg: #2e5a8c;
+  --chord-min-bg: #b42e2e;
+  --chord-sev-bg: #c49418;
+  --chord-maj-active: #4080b8;
+  --chord-min-active: #d44a4a;
+  --chord-sev-active: #dab030;
+
+  /* Strings strip — dark recess */
+  --strip-bg: #484438;
+  --strip-glow: #c4332a;
+  --strip-zone-line: rgba(0,0,0,0.12);
+
+  /* Rhythm */
+  --beat-dot: #706c60;
+  --beat-dot-active: #c4332a;
+  --beat-dot-current: #1c1a16;
+
+  /* Recorder */
+  --timeline-bg: #484438;
+  --timeline-note: #c4332a;
+  --timeline-head: #1c1a16;
+  --rec-active: #c4332a;
+
+  /* Speaker */
+  --grill-bg: #3e3a30;
+  --grill-dot: rgba(0,0,0,0.2);
+
+  /* Accents */
+  --accent-1: #2e5a8c;
+  --accent-2: #c49418;
+
+  /* Text — stamped dark ink, slightly faded */
+  --text-primary: #1c1a16;
+  --text-secondary: #3e3a30;
+  --text-muted: #5e5a4e;
+}
+
+/* === PLASTIC BODY TEXTURE === */
+/* Layered gradients simulate moulded ABS plastic grain + decades of grime */
+[data-theme="om-27"] #omnichord-body,
+:root:has(#theme-stylesheet[href*="om-27"]) #omnichord-body {
+  background:
+    /* Surface scuff marks — faint diagonal scratches */
+    repeating-linear-gradient(
+      135deg,
+      transparent,
+      transparent 40px,
+      rgba(255,255,255,0.02) 40px,
+      rgba(255,255,255,0.02) 41px
+    ),
+    /* Worn sheen — plastic reflecting light unevenly */
+    radial-gradient(
+      ellipse 120% 60% at 40% 20%,
+      rgba(255,255,255,0.08),
+      transparent 60%
+    ),
+    /* Yellowed aging — warmer toward edges */
+    radial-gradient(
+      ellipse at 50% 50%,
+      #a09a8c,
+      #948e7c 80%
+    );
+  box-shadow:
+    0 6px 24px rgba(0,0,0,0.5),
+    0 2px 4px rgba(0,0,0,0.3),
+    /* Plastic edge highlight */
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.15);
+}
+
+/* === BEZEL — moulded plastic inner frame === */
+[data-theme="om-27"] #omnichord-bezel,
+:root:has(#theme-stylesheet[href*="om-27"]) #omnichord-bezel {
+  background:
+    /* Subtle plastic grain noise (simulated) */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.01) 2px,
+      rgba(0,0,0,0.01) 3px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.008) 2px,
+      rgba(0,0,0,0.008) 3px
+    ),
+    /* Base plastic color with aging gradient */
+    linear-gradient(
+      180deg,
+      #b0aa9c 0%,
+      #a8a294 30%,
+      #a09a8a 70%,
+      #989282 100%
+    );
+  border: 1px solid #706c5e;
+  box-shadow:
+    /* Recessed bezel feel */
+    inset 0 2px 4px rgba(0,0,0,0.1),
+    inset 0 -1px 0 rgba(255,255,255,0.06);
+}
+
+/* === BRAND STRIP — stamped/embossed text on plastic === */
+:root:has(#theme-stylesheet[href*="om-27"]) #brand-strip {
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+:root:has(#theme-stylesheet[href*="om-27"]) .brand-name {
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.15),
+    0 -1px 0 rgba(0,0,0,0.2);
+  letter-spacing: 8px;
+}
+
+:root:has(#theme-stylesheet[href*="om-27"]) .brand-engraving {
+  opacity: 0.35;
+}
+
+/* === CHORD BUTTONS — plastic keycaps, worn smooth === */
+:root:has(#theme-stylesheet[href*="om-27"]) .chord-btn {
+  box-shadow:
+    /* Raised plastic button feel */
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    inset 0 -1px 0 rgba(0,0,0,0.25),
+    0 1px 2px rgba(0,0,0,0.2);
+  border: 1px solid rgba(0,0,0,0.2);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.1);
+}
+
+:root:has(#theme-stylesheet[href*="om-27"]) .chord-btn.active {
+  box-shadow:
+    /* Pressed in look */
+    inset 0 2px 4px rgba(0,0,0,0.3),
+    inset 0 -1px 0 rgba(255,255,255,0.05);
+}
+
+/* === STRINGS STRIP — recessed dark plastic with wear marks === */
+:root:has(#theme-stylesheet[href*="om-27"]) #strings-strip {
+  background:
+    /* Finger wear pattern in the middle */
+    radial-gradient(
+      ellipse 80% 100% at 50% 50%,
+      rgba(255,255,255,0.03),
+      transparent
+    ),
+    #484438;
+  box-shadow:
+    inset 0 3px 8px rgba(0,0,0,0.4),
+    inset 0 -1px 0 rgba(255,255,255,0.04),
+    0 1px 0 rgba(255,255,255,0.06);
+  border: 1px solid rgba(0,0,0,0.2);
+}
+
+/* === STRINGS CONTROLS — worn knobs look === */
+:root:has(#theme-stylesheet[href*="om-27"]) #strings-controls input[type="range"]::-webkit-slider-thumb {
+  background: #706c5e;
+  border-color: #504c42;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+:root:has(#theme-stylesheet[href*="om-27"]) #strings-controls input[type="range"]::-webkit-slider-runnable-track {
+  background: #5e5a4e;
+}
+
+/* === RHYTHM SECTION — panel join line === */
+:root:has(#theme-stylesheet[href*="om-27"]) #rhythm-section {
+  border-top: 1px solid rgba(0,0,0,0.15);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* === BEAT DOTS — old red LEDs, dim with halo === */
+:root:has(#theme-stylesheet[href*="om-27"]) .beat-dot {
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,0.3),
+    0 0 1px rgba(0,0,0,0.2);
+}
+
+:root:has(#theme-stylesheet[href*="om-27"]) .beat-dot.current {
+  box-shadow:
+    0 0 6px rgba(196,51,42,0.5),
+    0 0 12px rgba(196,51,42,0.2);
+}
+
+/* === SPEAKER GRILL — deep recess with real depth === */
+:root:has(#theme-stylesheet[href*="om-27"]) #speaker-grill {
+  padding: 12px 40px 18px;
+}
+
+:root:has(#theme-stylesheet[href*="om-27"]) .grill-pattern {
+  background-image:
+    radial-gradient(circle, rgba(0,0,0,0.25) 1.2px, transparent 1.2px),
+    radial-gradient(circle, rgba(0,0,0,0.12) 1px, transparent 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-position: 0 0, 2.5px 2.5px;
+  background-color: #3a3628;
+  box-shadow:
+    inset 0 3px 8px rgba(0,0,0,0.5),
+    inset 0 -1px 0 rgba(255,255,255,0.04),
+    0 1px 0 rgba(255,255,255,0.06);
+  border: 1px solid rgba(0,0,0,0.2);
+  border-radius: 3px;
+}
+
+/* === RECORDER SECTION === */
+:root:has(#theme-stylesheet[href*="om-27"]) #recorder-section {
+  border-top: 1px solid rgba(0,0,0,0.15);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+:root:has(#theme-stylesheet[href*="om-27"]) #recorder-timeline {
+  background: #3e3a30;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+  border: 1px solid rgba(0,0,0,0.15);
+}
+
+/* === BUTTONS — worn plastic tactile feel === */
+:root:has(#theme-stylesheet[href*="om-27"]) #rhythm-start-stop,
+:root:has(#theme-stylesheet[href*="om-27"]) #metronome-btn,
+:root:has(#theme-stylesheet[href*="om-27"]) .rec-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.15),
+    0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* === HELP BUTTON === */
+:root:has(#theme-stylesheet[href*="om-27"]) #help-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.15),
+    0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* === VIBRATO BUTTON === */
+:root:has(#theme-stylesheet[href*="om-27"]) #vibrato-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.15),
+    0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* === SELECTS — sunken plastic look === */
+:root:has(#theme-stylesheet[href*="om-27"]) select {
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* === CONTROLS TRAY — recessed panel === */
+:root:has(#theme-stylesheet[href*="om-27"]) #controls-tray {
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  padding-bottom: 8px;
+}
+
+/* === SHORTCUTS OVERLAY — keep legible === */
+:root:has(#theme-stylesheet[href*="om-27"]) .shortcuts-content {
+  background: #a8a294;
+  border: 1px solid #6e6a5e;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+/* === SECTION LABELS — embossed into the plastic === */
+:root:has(#theme-stylesheet[href*="om-27"]) .section-label {
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.1),
+    0 -1px 0 rgba(0,0,0,0.15);
+}

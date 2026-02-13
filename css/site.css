@@ -1,0 +1,166 @@
+/* site.css — Showcase site shell
+   White void. Real instruments floating small. Click to zoom up. */
+
+/* === RESET === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* === SITE BACKGROUND === */
+#site-bg {
+  position: fixed;
+  inset: 0;
+  background-color: #fafaf8;
+  transition: background-color 0.6s ease;
+  z-index: 0;
+}
+
+/* === LOGO === */
+#site-logo {
+  position: fixed;
+  top: 20px;
+  left: 24px;
+  z-index: 5;
+  font-size: 14px;
+  color: #ccc;
+  letter-spacing: 1px;
+  user-select: none;
+  transition: color 0.6s ease;
+}
+
+.logo-face { opacity: 0.5; }
+
+/* === BACK BUTTON === */
+#back-btn {
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  z-index: 200;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.15);
+  color: rgba(255,255,255,0.7);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease, background 0.15s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+#back-btn:hover {
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+}
+
+#back-btn.back-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* === WINDOW LAYER === */
+#window-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+#window-layer .wm-window {
+  pointer-events: auto;
+}
+
+/* === CAROUSEL LABELS === */
+#carousel-labels {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#carousel-labels.labels-hidden {
+  opacity: 0;
+}
+
+.carousel-label {
+  position: absolute;
+  transform: translateX(-50%);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.cl-category {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.cl-name {
+  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  letter-spacing: -0.3px;
+}
+
+.cl-soon {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #bbb;
+  background: #f0f0ee;
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-top: 2px;
+}
+
+/* === PLACEHOLDER CONTENT (Drumbyte, Nullamp) === */
+.placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  padding: 60px 40px;
+  text-align: center;
+  user-select: none;
+}
+
+.placeholder-ascii {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  opacity: 0.2;
+  margin-bottom: 30px;
+  white-space: pre;
+}
+
+.placeholder-content h2 {
+  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.placeholder-content p {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.15);
+  text-transform: uppercase;
+}

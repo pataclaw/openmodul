@@ -1,0 +1,213 @@
+/* OM-36 (1984) — Dark charcoal body, refined. Heavier plastic, more serious.
+   The pro model: darker ABS, tighter mould lines, worn rubber grip areas */
+:root {
+  --page-bg: #1e1c1a;
+  --bezel-bg: #333130;
+  --body-bg: #3e3c3a;
+  --body-bg-secondary: #434140;
+  --body-border: #2e2c2a;
+  --btn-bg: #383634;
+  --btn-bg-hover: #444240;
+  --btn-active: #cc4444;
+  --btn-text: #d8d4cc;
+  --btn-border: #2a2828;
+  --btn-radius: 4px;
+  --chord-maj-bg: #2e5580;
+  --chord-min-bg: #802e3e;
+  --chord-sev-bg: #80702e;
+  --chord-maj-active: #4080bb;
+  --chord-min-active: #bb4060;
+  --chord-sev-active: #bbaa40;
+  --strip-bg: #252320;
+  --strip-glow: #cc4444;
+  --strip-zone-line: rgba(255,255,255,0.05);
+  --beat-dot: #2e2c2a;
+  --beat-dot-active: #cc4444;
+  --beat-dot-current: #d8d4cc;
+  --timeline-bg: #252320;
+  --timeline-note: #cc4444;
+  --timeline-head: #d8d4cc;
+  --rec-active: #cc4444;
+  --accent-1: #4080bb;
+  --accent-2: #80702e;
+  --text-primary: #d8d4cc;
+  --text-secondary: #88847c;
+  --text-muted: #58544e;
+  --grill-bg: #1c1a18;
+  --grill-dot: rgba(255,255,255,0.04);
+}
+
+/* === BODY — heavy dark charcoal plastic, slight texture grain === */
+:root:has(#theme-stylesheet[href*="om-36"]) #omnichord-body {
+  background:
+    /* Fine mould grain — tighter than OM-27 (better manufacturing) */
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 3px,
+      rgba(255,255,255,0.008) 3px,
+      rgba(255,255,255,0.008) 4px
+    ),
+    /* Subtle rubber-like texture */
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.015) 3px,
+      rgba(0,0,0,0.015) 4px
+    ),
+    /* Worn highlight from handling */
+    radial-gradient(
+      ellipse 100% 50% at 50% 30%,
+      rgba(255,255,255,0.04),
+      transparent 70%
+    ),
+    /* Base dark plastic */
+    linear-gradient(180deg, #424040 0%, #3e3c3a 40%, #363432 100%);
+  box-shadow:
+    0 6px 24px rgba(0,0,0,0.6),
+    0 2px 4px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.2);
+}
+
+/* === BEZEL — slightly recessed dark frame === */
+:root:has(#theme-stylesheet[href*="om-36"]) #omnichord-bezel {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.005) 2px,
+      rgba(255,255,255,0.005) 3px
+    ),
+    linear-gradient(180deg, #464442 0%, #3e3c3a 40%, #383634 100%);
+  border: 1px solid #2a2826;
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.15),
+    inset 0 -1px 0 rgba(255,255,255,0.03);
+}
+
+/* === BRAND — screenprinted text, slightly worn === */
+:root:has(#theme-stylesheet[href*="om-36"]) #brand-strip {
+  border-bottom: 1px solid rgba(0,0,0,0.12);
+}
+
+:root:has(#theme-stylesheet[href*="om-36"]) .brand-name {
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.05),
+    0 -1px 0 rgba(0,0,0,0.3);
+}
+
+/* === CHORD BUTTONS — darker plastic, more bevelled === */
+:root:has(#theme-stylesheet[href*="om-36"]) .chord-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.3),
+    0 1px 3px rgba(0,0,0,0.25);
+  border: 1px solid rgba(0,0,0,0.25);
+}
+
+:root:has(#theme-stylesheet[href*="om-36"]) .chord-btn.active {
+  box-shadow:
+    inset 0 2px 5px rgba(0,0,0,0.4),
+    inset 0 -1px 0 rgba(255,255,255,0.03);
+}
+
+/* === STRINGS STRIP — deep recessed slot === */
+:root:has(#theme-stylesheet[href*="om-36"]) #strings-strip {
+  background:
+    radial-gradient(
+      ellipse 70% 100% at 50% 50%,
+      rgba(255,255,255,0.02),
+      transparent
+    ),
+    #252320;
+  box-shadow:
+    inset 0 3px 10px rgba(0,0,0,0.5),
+    inset 0 -1px 0 rgba(255,255,255,0.03),
+    0 1px 0 rgba(255,255,255,0.04);
+  border: 1px solid rgba(0,0,0,0.25);
+}
+
+/* === SLIDER KNOBS === */
+:root:has(#theme-stylesheet[href*="om-36"]) input[type="range"]::-webkit-slider-thumb {
+  background: #58544e;
+  border-color: #3a3836;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+:root:has(#theme-stylesheet[href*="om-36"]) input[type="range"]::-webkit-slider-runnable-track {
+  background: #2e2c2a;
+}
+
+/* === RHYTHM SECTION === */
+:root:has(#theme-stylesheet[href*="om-36"]) #rhythm-section {
+  border-top: 1px solid rgba(255,255,255,0.04);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+}
+
+/* === BEAT DOTS — red LEDs === */
+:root:has(#theme-stylesheet[href*="om-36"]) .beat-dot {
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+}
+
+:root:has(#theme-stylesheet[href*="om-36"]) .beat-dot.current {
+  box-shadow:
+    0 0 6px rgba(204,68,68,0.5),
+    0 0 14px rgba(204,68,68,0.2);
+}
+
+/* === SPEAKER GRILL — tight mesh, deep === */
+:root:has(#theme-stylesheet[href*="om-36"]) .grill-pattern {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px),
+    radial-gradient(circle, rgba(0,0,0,0.2) 1px, transparent 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-position: 0 0, 2.5px 2.5px;
+  background-color: #1c1a18;
+  box-shadow:
+    inset 0 3px 10px rgba(0,0,0,0.6),
+    inset 0 -1px 0 rgba(255,255,255,0.02),
+    0 1px 0 rgba(255,255,255,0.04);
+  border: 1px solid rgba(0,0,0,0.3);
+}
+
+/* === RECORDER === */
+:root:has(#theme-stylesheet[href*="om-36"]) #recorder-section {
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+:root:has(#theme-stylesheet[href*="om-36"]) #recorder-timeline {
+  background: #1e1c1a;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+  border: 1px solid rgba(0,0,0,0.2);
+}
+
+/* === BUTTONS — dark tactile plastic === */
+:root:has(#theme-stylesheet[href*="om-36"]) #rhythm-start-stop,
+:root:has(#theme-stylesheet[href*="om-36"]) #metronome-btn,
+:root:has(#theme-stylesheet[href*="om-36"]) .rec-btn,
+:root:has(#theme-stylesheet[href*="om-36"]) #vibrato-btn,
+:root:has(#theme-stylesheet[href*="om-36"]) #help-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -1px 0 rgba(0,0,0,0.2),
+    0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* === SELECTS === */
+:root:has(#theme-stylesheet[href*="om-36"]) select {
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* === SHORTCUTS OVERLAY === */
+:root:has(#theme-stylesheet[href*="om-36"]) .shortcuts-content {
+  background: #434140;
+  border: 1px solid #2a2828;
+}
+
+/* === SECTION LABELS === */
+:root:has(#theme-stylesheet[href*="om-36"]) .section-label {
+  text-shadow: 0 1px 0 rgba(255,255,255,0.04), 0 -1px 0 rgba(0,0,0,0.2);
+}

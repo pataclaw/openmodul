@@ -1,0 +1,238 @@
+/* OM-84 (1988) — Black lacquer body with gold accents.
+   The luxury model: piano-black ABS, gold silkscreen, brass-look trim.
+   Decades of fingerprints on glossy black, gold wearing thin. */
+:root {
+  --page-bg: #d8d0c0;
+  --bezel-bg: #121214;
+  --body-bg: #1a1a1c;
+  --body-bg-secondary: #1e1e20;
+  --body-border: #2a2a26;
+  --btn-bg: #222220;
+  --btn-bg-hover: #2c2c2a;
+  --btn-active: #c8a84e;
+  --btn-text: #c8c098;
+  --btn-border: #383834;
+  --btn-radius: 3px;
+  --chord-maj-bg: #2a2a1e;
+  --chord-min-bg: #2a1e1e;
+  --chord-sev-bg: #1e2a2a;
+  --chord-maj-active: #c8a84e;
+  --chord-min-active: #c87050;
+  --chord-sev-active: #50a8c8;
+  --strip-bg: #0e0e10;
+  --strip-glow: #c8a84e;
+  --strip-zone-line: rgba(200,168,78,0.08);
+  --beat-dot: #2a2a26;
+  --beat-dot-active: #c8a84e;
+  --beat-dot-current: #e8d8a0;
+  --timeline-bg: #0e0e10;
+  --timeline-note: #c8a84e;
+  --timeline-head: #e8d8a0;
+  --rec-active: #c84040;
+  --accent-1: #c8a84e;
+  --accent-2: #8a7030;
+  --text-primary: #c8c098;
+  --text-secondary: #7a7458;
+  --text-muted: #4a4838;
+  --grill-bg: #0a0a0c;
+  --grill-dot: rgba(200,168,78,0.05);
+}
+
+/* === BODY — glossy piano-black plastic, fingerprint sheen === */
+:root:has(#theme-stylesheet[href*="om-84"]) #omnichord-body {
+  background:
+    /* Glossy highlight — top-left reflection like lacquer */
+    radial-gradient(
+      ellipse 80% 40% at 35% 15%,
+      rgba(255,255,255,0.06),
+      transparent 60%
+    ),
+    /* Secondary sheen — lower right reflection */
+    radial-gradient(
+      ellipse 50% 30% at 70% 80%,
+      rgba(255,255,255,0.02),
+      transparent 50%
+    ),
+    /* Fingerprint haze — subtle smudge across surface */
+    radial-gradient(
+      ellipse 60% 40% at 50% 50%,
+      rgba(255,255,255,0.015),
+      transparent
+    ),
+    /* Base black lacquer */
+    linear-gradient(180deg, #1e1e20 0%, #1a1a1c 30%, #161618 100%);
+  box-shadow:
+    0 8px 30px rgba(0,0,0,0.7),
+    0 2px 6px rgba(0,0,0,0.4),
+    /* Glossy edge catch */
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -1px 0 rgba(0,0,0,0.3);
+}
+
+/* === BEZEL — deep black with gold-tinted edge === */
+:root:has(#theme-stylesheet[href*="om-84"]) #omnichord-bezel {
+  background:
+    /* Faint vertical grain — injection mould marks */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 4px,
+      rgba(255,255,255,0.004) 4px,
+      rgba(255,255,255,0.004) 5px
+    ),
+    linear-gradient(180deg, #201e1c 0%, #1c1a18 50%, #181616 100%);
+  border: 1px solid #2c2a24;
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,0.2),
+    /* Gold-tinted inner rim */
+    inset 0 0 0 1px rgba(200,168,78,0.04);
+}
+
+/* === BRAND — gold foil stamp, wearing off === */
+:root:has(#theme-stylesheet[href*="om-84"]) #brand-strip {
+  border-bottom: 1px solid rgba(200,168,78,0.08);
+}
+
+:root:has(#theme-stylesheet[href*="om-84"]) .brand-name {
+  color: #c8a84e;
+  text-shadow:
+    0 1px 0 rgba(200,168,78,0.3),
+    0 -1px 0 rgba(0,0,0,0.5),
+    0 0 8px rgba(200,168,78,0.1);
+  letter-spacing: 8px;
+}
+
+:root:has(#theme-stylesheet[href*="om-84"]) .brand-model {
+  color: #8a7030;
+}
+
+:root:has(#theme-stylesheet[href*="om-84"]) .brand-engraving {
+  color: #8a7030;
+  opacity: 0.3;
+}
+
+/* === CHORD BUTTONS — dark keys with subtle gold borders === */
+:root:has(#theme-stylesheet[href*="om-84"]) .chord-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(200,168,78,0.08),
+    inset 0 -1px 0 rgba(0,0,0,0.3),
+    0 1px 3px rgba(0,0,0,0.3);
+  border: 1px solid rgba(200,168,78,0.1);
+}
+
+:root:has(#theme-stylesheet[href*="om-84"]) .chord-btn.active {
+  box-shadow:
+    inset 0 2px 5px rgba(0,0,0,0.4),
+    0 0 8px rgba(200,168,78,0.2);
+}
+
+/* === STRINGS STRIP — deep black recess, gold glow on strum === */
+:root:has(#theme-stylesheet[href*="om-84"]) #strings-strip {
+  background:
+    radial-gradient(
+      ellipse 80% 100% at 50% 50%,
+      rgba(200,168,78,0.015),
+      transparent
+    ),
+    #0e0e10;
+  box-shadow:
+    inset 0 3px 10px rgba(0,0,0,0.6),
+    inset 0 -1px 0 rgba(200,168,78,0.03),
+    0 1px 0 rgba(255,255,255,0.03);
+  border: 1px solid rgba(200,168,78,0.06);
+}
+
+/* === SLIDER KNOBS — gold-tinted === */
+:root:has(#theme-stylesheet[href*="om-84"]) input[type="range"]::-webkit-slider-thumb {
+  background: #6a6040;
+  border-color: #3a3828;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(200,168,78,0.15);
+}
+
+:root:has(#theme-stylesheet[href*="om-84"]) input[type="range"]::-webkit-slider-runnable-track {
+  background: #2a2826;
+}
+
+/* === RHYTHM SECTION === */
+:root:has(#theme-stylesheet[href*="om-84"]) #rhythm-section {
+  border-top: 1px solid rgba(200,168,78,0.06);
+  box-shadow: inset 0 1px 0 rgba(200,168,78,0.02);
+}
+
+/* === BEAT DOTS — warm gold LEDs === */
+:root:has(#theme-stylesheet[href*="om-84"]) .beat-dot {
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+}
+
+:root:has(#theme-stylesheet[href*="om-84"]) .beat-dot.active {
+  box-shadow: 0 0 4px rgba(200,168,78,0.3);
+}
+
+:root:has(#theme-stylesheet[href*="om-84"]) .beat-dot.current {
+  box-shadow:
+    0 0 8px rgba(200,168,78,0.5),
+    0 0 16px rgba(200,168,78,0.2);
+}
+
+/* === SPEAKER GRILL — black mesh with gold dust === */
+:root:has(#theme-stylesheet[href*="om-84"]) .grill-pattern {
+  background-image:
+    radial-gradient(circle, rgba(200,168,78,0.05) 1px, transparent 1px),
+    radial-gradient(circle, rgba(0,0,0,0.3) 1px, transparent 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-position: 0 0, 2.5px 2.5px;
+  background-color: #0c0c0e;
+  box-shadow:
+    inset 0 3px 10px rgba(0,0,0,0.7),
+    inset 0 -1px 0 rgba(200,168,78,0.02),
+    0 1px 0 rgba(255,255,255,0.02);
+  border: 1px solid rgba(200,168,78,0.06);
+}
+
+/* === RECORDER === */
+:root:has(#theme-stylesheet[href*="om-84"]) #recorder-section {
+  border-top: 1px solid rgba(200,168,78,0.06);
+}
+
+:root:has(#theme-stylesheet[href*="om-84"]) #recorder-timeline {
+  background: #0a0a0c;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+  border: 1px solid rgba(200,168,78,0.04);
+}
+
+/* === BUTTONS — dark with gold tint === */
+:root:has(#theme-stylesheet[href*="om-84"]) #rhythm-start-stop,
+:root:has(#theme-stylesheet[href*="om-84"]) #metronome-btn,
+:root:has(#theme-stylesheet[href*="om-84"]) .rec-btn,
+:root:has(#theme-stylesheet[href*="om-84"]) #vibrato-btn,
+:root:has(#theme-stylesheet[href*="om-84"]) #help-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(200,168,78,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.25),
+    0 1px 3px rgba(0,0,0,0.4);
+}
+
+/* === SELECTS === */
+:root:has(#theme-stylesheet[href*="om-84"]) select {
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.25);
+}
+
+/* === CONTROLS TRAY === */
+:root:has(#theme-stylesheet[href*="om-84"]) #controls-tray {
+  border-bottom: 1px solid rgba(200,168,78,0.05);
+}
+
+/* === SHORTCUTS OVERLAY === */
+:root:has(#theme-stylesheet[href*="om-84"]) .shortcuts-content {
+  background: #1e1e20;
+  border: 1px solid rgba(200,168,78,0.1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+}
+
+/* === SECTION LABELS — faded gold emboss === */
+:root:has(#theme-stylesheet[href*="om-84"]) .section-label {
+  color: #6a6040;
+  text-shadow:
+    0 1px 0 rgba(200,168,78,0.08),
+    0 -1px 0 rgba(0,0,0,0.3);
+}

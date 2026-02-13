@@ -1,0 +1,230 @@
+/* OM-300 (1999) — Translucent blue body, white/cream buttons.
+   Late 90s vibes: semi-translucent colored plastic (iMac era),
+   smooth injection mould, slightly cloudy with age. */
+:root {
+  --page-bg: #0c1828;
+  --bezel-bg: #142444;
+  --body-bg: #1a3060;
+  --body-bg-secondary: #1e3468;
+  --body-border: #2a4880;
+  --btn-bg: #dcdcd4;
+  --btn-bg-hover: #e4e4dc;
+  --btn-active: #ff5050;
+  --btn-text: #1a1a18;
+  --btn-border: #b0b0a8;
+  --btn-radius: 5px;
+  --chord-maj-bg: #d0d0c8;
+  --chord-min-bg: #c4c4bc;
+  --chord-sev-bg: #b8b8b0;
+  --chord-maj-active: #ff6060;
+  --chord-min-active: #ff8040;
+  --chord-sev-active: #ffc040;
+  --strip-bg: #0e1e3a;
+  --strip-glow: #60a0ff;
+  --strip-zone-line: rgba(255,255,255,0.08);
+  --beat-dot: #1e3460;
+  --beat-dot-active: #60a0ff;
+  --beat-dot-current: #f0f0e8;
+  --timeline-bg: #0e1e3a;
+  --timeline-note: #60a0ff;
+  --timeline-head: #f0f0e8;
+  --rec-active: #ff3333;
+  --accent-1: #60a0ff;
+  --accent-2: #2a4880;
+  --text-primary: #e0e0d8;
+  --text-secondary: #8098b8;
+  --text-muted: #3a5878;
+  --grill-bg: #0a1424;
+  --grill-dot: rgba(96,160,255,0.06);
+}
+
+/* === BODY — translucent blue plastic, cloudy with depth === */
+:root:has(#theme-stylesheet[href*="om-300"]) #omnichord-body {
+  background:
+    /* Translucent plastic sheen — light passes through unevenly */
+    radial-gradient(
+      ellipse 90% 50% at 45% 25%,
+      rgba(96,160,255,0.08),
+      transparent 60%
+    ),
+    /* Internal depth — darker core shows through translucent shell */
+    radial-gradient(
+      ellipse at 50% 100%,
+      rgba(0,0,0,0.15),
+      transparent 70%
+    ),
+    /* Subtle plastic swirl pattern */
+    repeating-linear-gradient(
+      160deg,
+      transparent,
+      transparent 30px,
+      rgba(96,160,255,0.015) 30px,
+      rgba(96,160,255,0.015) 32px
+    ),
+    /* Base blue plastic */
+    linear-gradient(180deg, #1e3870 0%, #1a3060 40%, #163058 100%);
+  box-shadow:
+    0 6px 24px rgba(0,20,60,0.6),
+    0 2px 4px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(96,160,255,0.1),
+    inset 0 -1px 0 rgba(0,0,0,0.2);
+}
+
+/* === BEZEL — deeper blue, injection mould seam === */
+:root:has(#theme-stylesheet[href*="om-300"]) #omnichord-bezel {
+  background:
+    /* Faint horizontal flow lines from moulding */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 4px,
+      rgba(96,160,255,0.008) 4px,
+      rgba(96,160,255,0.008) 5px
+    ),
+    linear-gradient(180deg, #1e3468 0%, #1a3060 50%, #163058 100%);
+  border: 1px solid #2a4878;
+  box-shadow:
+    inset 0 2px 5px rgba(0,0,0,0.2),
+    inset 0 -1px 0 rgba(96,160,255,0.04);
+}
+
+/* === BRAND — white screenprint on blue === */
+:root:has(#theme-stylesheet[href*="om-300"]) #brand-strip {
+  border-bottom: 1px solid rgba(96,160,255,0.08);
+}
+
+:root:has(#theme-stylesheet[href*="om-300"]) .brand-name {
+  text-shadow:
+    0 1px 0 rgba(96,160,255,0.1),
+    0 -1px 0 rgba(0,0,0,0.3),
+    0 0 6px rgba(96,160,255,0.08);
+}
+
+:root:has(#theme-stylesheet[href*="om-300"]) .brand-engraving {
+  color: #8098b8;
+  opacity: 0.4;
+}
+
+/* === CHORD BUTTONS — cream/white plastic, raised with shadow === */
+:root:has(#theme-stylesheet[href*="om-300"]) .chord-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    inset 0 -1px 0 rgba(0,0,0,0.12),
+    0 2px 4px rgba(0,20,60,0.3);
+  border: 1px solid #a0a098;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+
+:root:has(#theme-stylesheet[href*="om-300"]) .chord-btn.active {
+  box-shadow:
+    inset 0 2px 5px rgba(0,0,0,0.2),
+    inset 0 -1px 0 rgba(255,255,255,0.1);
+}
+
+/* === STRINGS STRIP — deep blue recess === */
+:root:has(#theme-stylesheet[href*="om-300"]) #strings-strip {
+  background:
+    radial-gradient(
+      ellipse 80% 100% at 50% 50%,
+      rgba(96,160,255,0.03),
+      transparent
+    ),
+    #0e1e3a;
+  box-shadow:
+    inset 0 3px 10px rgba(0,0,0,0.5),
+    inset 0 -1px 0 rgba(96,160,255,0.03),
+    0 1px 0 rgba(96,160,255,0.04);
+  border: 1px solid rgba(96,160,255,0.08);
+}
+
+/* === SLIDER KNOBS — white plastic === */
+:root:has(#theme-stylesheet[href*="om-300"]) input[type="range"]::-webkit-slider-thumb {
+  background: #c0c0b8;
+  border-color: #8888;
+  box-shadow: 0 1px 3px rgba(0,20,60,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+:root:has(#theme-stylesheet[href*="om-300"]) input[type="range"]::-webkit-slider-runnable-track {
+  background: #1e3460;
+}
+
+/* === RHYTHM === */
+:root:has(#theme-stylesheet[href*="om-300"]) #rhythm-section {
+  border-top: 1px solid rgba(96,160,255,0.08);
+  box-shadow: inset 0 1px 0 rgba(96,160,255,0.03);
+}
+
+/* === BEAT DOTS — blue LEDs === */
+:root:has(#theme-stylesheet[href*="om-300"]) .beat-dot {
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+}
+
+:root:has(#theme-stylesheet[href*="om-300"]) .beat-dot.active {
+  box-shadow: 0 0 4px rgba(96,160,255,0.3);
+}
+
+:root:has(#theme-stylesheet[href*="om-300"]) .beat-dot.current {
+  box-shadow:
+    0 0 8px rgba(96,160,255,0.5),
+    0 0 16px rgba(96,160,255,0.2);
+}
+
+/* === SPEAKER GRILL — blue-tinted mesh === */
+:root:has(#theme-stylesheet[href*="om-300"]) .grill-pattern {
+  background-image:
+    radial-gradient(circle, rgba(96,160,255,0.06) 1px, transparent 1px),
+    radial-gradient(circle, rgba(0,0,0,0.2) 1px, transparent 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-position: 0 0, 2.5px 2.5px;
+  background-color: #0c1828;
+  box-shadow:
+    inset 0 3px 10px rgba(0,0,0,0.5),
+    inset 0 -1px 0 rgba(96,160,255,0.02),
+    0 1px 0 rgba(96,160,255,0.03);
+  border: 1px solid rgba(96,160,255,0.06);
+}
+
+/* === RECORDER === */
+:root:has(#theme-stylesheet[href*="om-300"]) #recorder-section {
+  border-top: 1px solid rgba(96,160,255,0.08);
+}
+
+:root:has(#theme-stylesheet[href*="om-300"]) #recorder-timeline {
+  background: #0a1424;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+  border: 1px solid rgba(96,160,255,0.06);
+}
+
+/* === BUTTONS — cream on blue === */
+:root:has(#theme-stylesheet[href*="om-300"]) #rhythm-start-stop,
+:root:has(#theme-stylesheet[href*="om-300"]) #metronome-btn,
+:root:has(#theme-stylesheet[href*="om-300"]) .rec-btn,
+:root:has(#theme-stylesheet[href*="om-300"]) #vibrato-btn,
+:root:has(#theme-stylesheet[href*="om-300"]) #help-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.15),
+    inset 0 -1px 0 rgba(0,0,0,0.1),
+    0 1px 3px rgba(0,20,60,0.3);
+}
+
+/* === SELECTS === */
+:root:has(#theme-stylesheet[href*="om-300"]) select {
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* === CONTROLS TRAY === */
+:root:has(#theme-stylesheet[href*="om-300"]) #controls-tray {
+  border-bottom: 1px solid rgba(96,160,255,0.06);
+}
+
+/* === SHORTCUTS OVERLAY === */
+:root:has(#theme-stylesheet[href*="om-300"]) .shortcuts-content {
+  background: #1e3468;
+  border: 1px solid #2a4878;
+  box-shadow: 0 8px 32px rgba(0,10,40,0.7);
+}
+
+/* === SECTION LABELS === */
+:root:has(#theme-stylesheet[href*="om-300"]) .section-label {
+  text-shadow: 0 0 6px rgba(96,160,255,0.08), 0 1px 0 rgba(96,160,255,0.05);
+}

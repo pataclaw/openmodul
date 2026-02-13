@@ -1,0 +1,209 @@
+/* nullamp.css — Sine wave visualizer styling (square window) */
+
+/* === PIXEL LOGO in titlebar === */
+.nullamp-logo {
+  height: 29px;
+  margin-left: 8px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  flex-shrink: 0;
+}
+
+#nullamp-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0a10;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  color: #aaa;
+  user-select: none;
+}
+
+/* === DISPLAY (square) === */
+#nullamp-display {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(64, 192, 64, 0.12);
+  border-bottom: none;
+  overflow: hidden;
+}
+
+#nullamp-display.nullamp-dragover {
+  border-color: rgba(64, 192, 64, 0.5);
+  box-shadow: inset 0 0 30px rgba(64, 192, 64, 0.1);
+}
+
+#nullamp-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+#nullamp-preset-name {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(64, 192, 64, 0.7);
+  text-shadow: 0 0 8px rgba(64, 192, 64, 0.4);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* === DROP ZONE OVERLAY === */
+#nullamp-dropzone {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 16, 0.85);
+  z-index: 10;
+  gap: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#nullamp-dropzone:hover {
+  background: rgba(10, 10, 16, 0.75);
+}
+
+#nullamp-dropzone.hidden {
+  display: none;
+}
+
+#nullamp-dropzone .drop-icon {
+  font-size: 36px;
+  opacity: 0.5;
+  line-height: 1;
+}
+
+#nullamp-dropzone .drop-text {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+#nullamp-dropzone .drop-hint {
+  font-size: 9px;
+  color: rgba(64, 192, 64, 0.5);
+  letter-spacing: 1px;
+}
+
+/* Hidden file input */
+#nullamp-file {
+  display: none;
+}
+
+/* === CONTROLS BAR === */
+#nullamp-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #0e0e16;
+  border-top: 1px solid rgba(64, 192, 64, 0.08);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+#nullamp-controls select,
+#nullamp-controls input[type="range"] {
+  font-family: inherit;
+  font-size: 10px;
+  background: #141420;
+  color: #aaa;
+  border: 1px solid rgba(64, 192, 64, 0.15);
+  border-radius: 3px;
+  padding: 3px 6px;
+  outline: none;
+}
+
+#nullamp-controls select {
+  cursor: pointer;
+  min-width: 100px;
+}
+
+#nullamp-controls select:hover {
+  border-color: rgba(64, 192, 64, 0.3);
+}
+
+#nullamp-controls input[type="range"] {
+  width: 80px;
+  cursor: pointer;
+  accent-color: #40c040;
+}
+
+#nullamp-controls label {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.nullamp-nav-btn {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 1px solid rgba(64, 192, 64, 0.2);
+  color: rgba(64, 192, 64, 0.6);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.nullamp-nav-btn:hover {
+  background: rgba(64, 192, 64, 0.12);
+  border-color: rgba(64, 192, 64, 0.4);
+  color: #40c040;
+  box-shadow: 0 0 8px rgba(64, 192, 64, 0.15);
+}
+
+.nullamp-ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nullamp-spacer {
+  flex: 1;
+}
+
+/* Filename display */
+#nullamp-filename {
+  font-size: 9px;
+  color: rgba(64, 192, 64, 0.6);
+  letter-spacing: 0.5px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 700px) {
+  #nullamp-controls {
+    padding: 5px 8px;
+    gap: 6px;
+  }
+
+  #nullamp-controls select {
+    min-width: 80px;
+  }
+}

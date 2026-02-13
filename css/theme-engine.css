@@ -1,0 +1,69 @@
+/* Theme Engine — CSS Custom Properties consumed by all themes */
+:root {
+  /* Page & Instrument Body */
+  --page-bg: #0a0a10;
+  --bezel-bg: #151520;
+
+  /* Body */
+  --body-bg: #111118;
+  --body-bg-secondary: #171720;
+  --body-border: #252530;
+
+  /* Buttons */
+  --btn-bg: #1e1e2a;
+  --btn-bg-hover: #282838;
+  --btn-active: #e04560;
+  --btn-text: #d0d0d8;
+  --btn-border: #2e2e3c;
+  --btn-radius: 5px;
+
+  /* Chord button colors per row */
+  --chord-maj-bg: #1c2d48;
+  --chord-min-bg: #2d1c40;
+  --chord-sev-bg: #40301c;
+  --chord-maj-active: #3070b8;
+  --chord-min-active: #8030b8;
+  --chord-sev-active: #b88030;
+
+  /* Strings strip */
+  --strip-bg: #0c0c14;
+  --strip-glow: #e04560;
+  --strip-zone-line: rgba(255,255,255,0.04);
+
+  /* Rhythm */
+  --beat-dot: #252530;
+  --beat-dot-active: #e04560;
+  --beat-dot-current: #e8e8f0;
+
+  /* Recorder */
+  --timeline-bg: #0c0c14;
+  --timeline-note: #e04560;
+  --timeline-head: #e8e8f0;
+  --rec-active: #e03030;
+
+  /* Speaker Grill */
+  --grill-bg: rgba(0,0,0,0.4);
+  --grill-dot: rgba(255,255,255,0.04);
+
+  /* Accents */
+  --accent-1: #3070b8;
+  --accent-2: #8030b8;
+
+  /* Text */
+  --text-primary: #d0d0d8;
+  --text-secondary: #6a6a78;
+  --text-muted: #404050;
+
+  /* Spacing */
+  --gap: 12px;
+  --radius: 8px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-glow: 0 0 16px rgba(224,69,96,0.3);
+
+  /* Font */
+  --font: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  --font-display: -apple-system, 'Helvetica Neue', 'Arial', sans-serif;
+}

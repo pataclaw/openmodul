@@ -1,0 +1,37 @@
+/* Plain — Clean dark instrument */
+:root {
+  --page-bg: #0a0a10;
+  --bezel-bg: #151520;
+  --body-bg: #111118;
+  --body-bg-secondary: #171720;
+  --body-border: #252530;
+  --btn-bg: #1e1e2a;
+  --btn-bg-hover: #282838;
+  --btn-active: #e04560;
+  --btn-text: #d0d0d8;
+  --btn-border: #2e2e3c;
+  --btn-radius: 5px;
+  --chord-maj-bg: #1c2d48;
+  --chord-min-bg: #2d1c40;
+  --chord-sev-bg: #40301c;
+  --chord-maj-active: #3070b8;
+  --chord-min-active: #8030b8;
+  --chord-sev-active: #b88030;
+  --strip-bg: #0c0c14;
+  --strip-glow: #e04560;
+  --strip-zone-line: rgba(255,255,255,0.04);
+  --beat-dot: #252530;
+  --beat-dot-active: #e04560;
+  --beat-dot-current: #e8e8f0;
+  --timeline-bg: #0c0c14;
+  --timeline-note: #e04560;
+  --timeline-head: #e8e8f0;
+  --rec-active: #e03030;
+  --accent-1: #3070b8;
+  --accent-2: #8030b8;
+  --text-primary: #d0d0d8;
+  --text-secondary: #6a6a78;
+  --text-muted: #404050;
+  --grill-bg: rgba(0,0,0,0.4);
+  --grill-dot: rgba(255,255,255,0.04);
+}

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>(@_@)</title>
+
+  <!-- Site shell -->
+  <link rel="stylesheet" href="css/site.css">
+  <link rel="stylesheet" href="css/windows.css">
+
+  <!-- Nullamp visualizer -->
+  <link rel="stylesheet" href="css/nullamp.css">
+
+  <!-- Insomnichord instrument -->
+  <link rel="stylesheet" href="css/theme-engine.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/themes/om-27.css" id="theme-stylesheet">
+</head>
+<body>
+
+  <!-- Transitioning background -->
+  <div id="site-bg"></div>
+
+  <!-- Logo -->
+  <div id="site-logo">
+    <span class="logo-face">(@_@)</span>
+  </div>
+
+  <!-- Back button (appears when instrument is open) -->
+  <button id="back-btn" class="back-hidden" title="Back to carousel (Esc)">&larr;</button>
+
+  <!-- Carousel labels (positioned by site.js) -->
+  <div id="carousel-labels"></div>
+
+  <!-- Window layer — all windows live here, shown small in carousel mode -->
+  <div id="window-layer">
+
+    <!-- ========== INSOMNICHORD (chromeless — raw D-shape) ========== -->
+    <div id="wm-insomnichord" class="wm-window wm-chromeless" style="--wm-accent: #c8a84e;">
+      <div class="wm-content">
+        <div id="page">
+          <div id="omnichord-body">
+            <div id="omnichord-bezel">
+
+              <!-- Brand strip -->
+              <div id="brand-strip">
+                <span class="brand-engraving" aria-hidden="true">&nbsp;(@_@)&nbsp;</span>
+                <span class="brand-name">INSOMNICHORD</span>
+                <span class="brand-model" id="brand-model">IM-01</span>
+              </div>
+
+              <!-- Controls tray -->
+              <div id="controls-tray">
+                <button id="help-btn" title="Keyboard shortcuts">?</button>
+                <div class="tray-group">
+                  <label for="theme-select">Theme</label>
+                  <select id="theme-select">
+                    <option value="plain">Plain</option>
+                    <option value="om-27" selected>OM-27 (1981)</option>
+                    <option value="om-36">OM-36 (1984)</option>
+                    <option value="om-84">OM-84 (1988)</option>
+                    <option value="om-300">OM-300 (1999)</option>
+                    <option value="om-108">OM-108 (2023)</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+                <div class="tray-group midi-group">
+                  <label for="midi-output">MIDI</label>
+                  <select id="midi-output"><option value="">Out: None</option></select>
+                  <select id="midi-input"><option value="">In: None</option></select>
+                </div>
+              </div>
+
+              <!-- Custom Theme Panel -->
+              <div id="custom-theme-panel" class="hidden">
+                <h3>Custom Theme</h3>
+                <div class="color-pickers">
+                  <div class="color-row">
+                    <label>Background</label>
+                    <input type="color" data-var="--body-bg" value="#1a1a2e">
+                    <button class="eyedrop-btn" data-var="--body-bg" title="Pick from screen">&#128065;</button>
+                  </div>
+                  <div class="color-row">
+                    <label>Buttons</label>
+                    <input type="color" data-var="--btn-bg" value="#16213e">
+                    <button class="eyedrop-btn" data-var="--btn-bg" title="Pick from screen">&#128065;</button>
+                  </div>
+                  <div class="color-row">
+                    <label>Active</label>
+                    <input type="color" data-var="--btn-active" value="#e94560">
+                    <button class="eyedrop-btn" data-var="--btn-active" title="Pick from screen">&#128065;</button>
+                  </div>
+                  <div class="color-row">
+                    <label>Accent 1</label>
+                    <input type="color" data-var="--accent-1" value="#0f3460">
+                    <button class="eyedrop-btn" data-var="--accent-1" title="Pick from screen">&#128065;</button>
+                  </div>
+                  <div class="color-row">
+                    <label>Accent 2</label>
+                    <input type="color" data-var="--accent-2" value="#533483">
+                    <button class="eyedrop-btn" data-var="--accent-2" title="Pick from screen">&#128065;</button>
+                  </div>
+                  <div class="color-row">
+                    <label>Text</label>
+                    <input type="color" data-var="--text-primary" value="#eaeaea">
+                    <button class="eyedrop-btn" data-var="--text-primary" title="Pick from screen">&#128065;</button>
+                  </div>
+                  <div class="color-row">
+                    <label>Strip Glow</label>
+                    <input type="color" data-var="--strip-glow" value="#e94560">
+                    <button class="eyedrop-btn" data-var="--strip-glow" title="Pick from screen">&#128065;</button>
+                  </div>
+                </div>
+                <div class="palette-extract">
+                  <input type="text" id="palette-url" placeholder="Paste image URL for palette extraction...">
+                  <button id="extract-palette-btn">Extract</button>
+                  <div id="palette-drop-zone">drop, click, or paste image</div>
+                  <canvas id="palette-canvas" class="hidden"></canvas>
+                </div>
+                <div class="theme-actions">
+                  <button id="save-custom-theme">Save</button>
+                  <button id="load-custom-theme">Load</button>
+                  <button id="export-custom-theme">Export</button>
+                  <input type="file" id="import-theme-file" accept=".json" class="hidden">
+                  <button id="import-custom-theme">Import</button>
+                </div>
+              </div>
+
+              <!-- Instrument face -->
+              <div id="instrument">
+
+                <!-- Chord buttons -->
+                <section id="chord-section">
+                  <div id="chord-grid"></div>
+                </section>
+
+                <!-- Sonic Strings touch strip -->
+                <section id="strings-section">
+                  <div class="section-label">SONIC STRINGS</div>
+                  <div id="strings-strip">
+                    <canvas id="strings-canvas"></canvas>
+                    <div id="strings-overlay"></div>
+                  </div>
+                  <div id="strings-controls">
+                    <select id="strings-voice">
+                      <optgroup label="Omnichord">
+                        <option value="om27" selected>OM-27 Harp</option>
+                        <option value="om84">OM-84 Harp</option>
+                        <option value="om300">OM-300 Digital</option>
+                      </optgroup>
+                      <optgroup label="Retro">
+                        <option value="8bit">8-Bit</option>
+                        <option value="chip">Chip Lead</option>
+                        <option value="triangle">Triangle</option>
+                      </optgroup>
+                      <optgroup label="Synth">
+                        <option value="shimmer">Shimmer</option>
+                        <option value="bell">Bell</option>
+                        <option value="pad">Warm Pad</option>
+                      </optgroup>
+                    </select>
+                    <button id="vibrato-btn" title="Vibrato (V)">VIB</button>
+                    <label>Sus</label>
+                    <input type="range" id="strings-sustain" min="0" max="100" value="50">
+                    <label>Vol</label>
+                    <input type="range" id="strings-volume" min="0" max="100" value="75">
+                    <label>Reverb</label>
+                    <input type="range" id="strings-reverb" min="0" max="100" value="40">
+                  </div>
+                </section>
+
+                <!-- Rhythm machine -->
+                <section id="rhythm-section">
+                  <div id="rhythm-controls">
+                    <button id="rhythm-start-stop">&#9654;</button>
+                    <button id="metronome-btn" title="Metronome (M)">&#9834;</button>
+                    <div class="rhythm-param">
+                      <select id="rhythm-pattern">
+                        <option value="rock">Rock</option>
+                        <option value="16beat">16-Beat</option>
+                        <option value="waltz">Waltz</option>
+                        <option value="bossa">Bossa Nova</option>
+                        <option value="samba">Samba</option>
+                        <option value="swing">Swing</option>
+                        <option value="march">March</option>
+                        <option value="disco">Disco</option>
+                      </select>
+                    </div>
+                    <div class="rhythm-param">
+                      <label>Tempo</label>
+                      <input type="range" id="rhythm-tempo" min="60" max="200" value="120">
+                      <span id="tempo-display">120</span>
+                    </div>
+                    <div class="rhythm-param">
+                      <label>Vol</label>
+                      <input type="range" id="rhythm-volume" min="0" max="100" value="60">
+                    </div>
+                    <div id="beat-indicator"></div>
+                  </div>
+                </section>
+
+                <!-- Loop recorder -->
+                <section id="recorder-section">
+                  <div id="recorder-controls">
+                    <button id="rec-record" class="rec-btn" title="Record">&#9679;</button>
+                    <button id="rec-overdub" class="rec-btn" title="Overdub">+</button>
+                    <button id="rec-play" class="rec-btn" title="Play">&#9654;</button>
+                    <button id="rec-stop" class="rec-btn" title="Stop">&#9632;</button>
+                    <button id="rec-clear" class="rec-btn" title="Clear">&#10005;</button>
+                    <select id="rec-loop-length" class="rec-select">
+                      <option value="free">Free</option>
+                      <option value="1">1 Bar</option>
+                      <option value="2">2 Bars</option>
+                      <option value="4" selected>4 Bars</option>
+                      <option value="8">8 Bars</option>
+                    </select>
+                    <button id="rec-export-wav" class="rec-btn" title="Export WAV">WAV</button>
+                    <button id="rec-export-midi" class="rec-btn" title="Export MIDI">MID</button>
+                  </div>
+                  <div id="recorder-timeline">
+                    <canvas id="timeline-canvas"></canvas>
+                    <div id="playback-head"></div>
+                  </div>
+                </section>
+              </div>
+
+              <!-- Speaker grill -->
+              <div id="speaker-grill">
+                <div class="grill-pattern"></div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Keyboard Shortcuts Overlay -->
+          <div id="shortcuts-overlay" class="hidden">
+            <div class="shortcuts-content">
+              <h3>Keyboard Shortcuts</h3>
+              <div class="shortcut-group-label">CHORDS</div>
+              <div class="shortcut-row"><kbd>1</kbd>-<kbd>9</kbd> <kbd>0</kbd> <kbd>-</kbd> <kbd>=</kbd> Select root (C C# D Eb E F F# G Ab A Bb B)</div>
+              <div class="shortcut-row"><kbd>Q</kbd> Major &nbsp; <kbd>W</kbd> Minor &nbsp; <kbd>E</kbd> 7th</div>
+              <div class="shortcut-row-note">Click same chord to deselect</div>
+              <div class="shortcut-group-label">SONIC STRINGS</div>
+              <div class="shortcut-row"><kbd>V</kbd> Vibrato on/off</div>
+              <div class="shortcut-row-note">Click &amp; drag strip to strum. Faster = brighter + louder</div>
+              <div class="shortcut-group-label">RHYTHM</div>
+              <div class="shortcut-row"><kbd>Space</kbd> Start / Stop rhythm</div>
+              <div class="shortcut-row"><kbd>M</kbd> Metronome on/off</div>
+              <div class="shortcut-row"><kbd>&uarr;</kbd> / <kbd>&darr;</kbd> Tempo &plusmn;5 BPM</div>
+              <div class="shortcut-group-label">RECORDING</div>
+              <div class="shortcut-row"><kbd>R</kbd> Record (1-bar count-in)</div>
+              <div class="shortcut-row"><kbd>P</kbd> Play / Stop loop</div>
+              <div class="shortcut-group-label">GENERAL</div>
+              <div class="shortcut-row"><kbd>?</kbd> Toggle this help</div>
+              <button id="close-shortcuts">Close</button>
+            </div>
+          </div>
+
+          <!-- Audio Start Overlay (hidden — site shell handles audio init via card click) -->
+          <div id="audio-start-overlay" class="hidden">
+            <div class="start-content">
+              <div class="start-logo">INSOMNICHORD</div>
+              <p>Click anywhere to start</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <!-- end Insomnichord window -->
+
+    <!-- ========== DRUMBYTE WINDOW (placeholder) ========== -->
+    <div id="wm-drumbyte" class="wm-window wm-not-ready" style="--wm-accent: #e05030;">
+      <div class="wm-titlebar">
+        <div class="wm-accent"></div>
+        <span class="wm-title">Drumbyte</span>
+        <div class="wm-controls">
+          <button class="wm-btn wm-minimize">_</button>
+          <button class="wm-btn wm-close">&times;</button>
+        </div>
+      </div>
+      <div class="wm-content" style="background: #1a1614;">
+        <div class="placeholder-content">
+          <div class="placeholder-ascii">+--+--+--+--+
+|  |  |  |  |
++--+--+--+--+
+|  |  |  |  |
++--+--+--+--+
+|  |  |  |  |
++--+--+--+--+
+|  |  |  |  |
++--+--+--+--+</div>
+          <h2>DRUMBYTE</h2>
+          <p>COMING SOON</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== NULLAMP WINDOW ========== -->
+    <div id="wm-nullamp" class="wm-window" style="--wm-accent: #40c040;">
+      <div class="wm-titlebar">
+        <div class="wm-accent"></div>
+        <canvas id="nullamp-logo" class="nullamp-logo"></canvas>
+        <div class="wm-controls">
+          <button class="wm-btn wm-minimize">_</button>
+          <button class="wm-btn wm-close">&times;</button>
+        </div>
+      </div>
+      <div class="wm-content" style="background: #0a0a10;">
+        <div id="nullamp-body">
+          <input type="file" id="nullamp-file" accept=".mp3,.wav,.ogg,.flac,.aac,.m4a,.webm,.mp4,audio/*">
+          <div id="nullamp-display">
+            <canvas id="nullamp-canvas"></canvas>
+            <div id="nullamp-dropzone">
+              <div class="drop-icon">&#9835;</div>
+              <div class="drop-text">Drop audio file here</div>
+              <div class="drop-hint">or click to browse</div>
+            </div>
+          </div>
+          <div id="nullamp-controls">
+            <div class="nullamp-ctrl-group">
+              <button class="nullamp-nav-btn" id="nullamp-playpause">&#9654;</button>
+              <span id="nullamp-filename"></span>
+            </div>
+            <div class="nullamp-spacer"></div>
+            <div class="nullamp-ctrl-group">
+              <label>Color</label>
+              <select id="nullamp-scheme"></select>
+            </div>
+            <div class="nullamp-ctrl-group">
+              <label>Gain</label>
+              <input type="range" id="nullamp-gain" min="0" max="100" value="50">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Site scripts (load first — they set up the shell) -->
+  <script src="js/windows.js"></script>
+  <script src="js/site.js"></script>
+
+  <!-- Insomnichord scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/chords.js"></script>
+  <script src="js/strings.js"></script>
+  <script src="js/rhythm.js"></script>
+  <script src="js/midi.js"></script>
+  <script src="js/recorder.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/ui.js"></script>
+
+  <!-- Nullamp visualizer -->
+  <script src="js/nullamp.js"></script>
+</body>
+</html>

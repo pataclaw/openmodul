@@ -1,0 +1,229 @@
+/* OM-108 (2023) — Clean matte white, pastel accents, modern rounded.
+   The reboot: soft-touch white polycarbonate, minimal, Apple-adjacent.
+   Pristine but warm — like unboxing a new instrument. */
+:root {
+  --page-bg: #e4e2dc;
+  --bezel-bg: #eae8e4;
+  --body-bg: #f0eee8;
+  --body-bg-secondary: #f4f2ee;
+  --body-border: #d8d6d0;
+  --btn-bg: #eceae6;
+  --btn-bg-hover: #f2f0ec;
+  --btn-active: #ff6b8a;
+  --btn-text: #2a2a28;
+  --btn-border: #cccac4;
+  --btn-radius: 8px;
+  --chord-maj-bg: #dce8ff;
+  --chord-min-bg: #ffdce8;
+  --chord-sev-bg: #ffe8dc;
+  --chord-maj-active: #80b0ff;
+  --chord-min-active: #ff80a0;
+  --chord-sev-active: #ffa060;
+  --strip-bg: #e4e2dc;
+  --strip-glow: #ff6b8a;
+  --strip-zone-line: rgba(0,0,0,0.04);
+  --beat-dot: #d0cec8;
+  --beat-dot-active: #ff6b8a;
+  --beat-dot-current: #2a2a28;
+  --timeline-bg: #e4e2dc;
+  --timeline-note: #ff6b8a;
+  --timeline-head: #2a2a28;
+  --rec-active: #ff4466;
+  --accent-1: #80b0ff;
+  --accent-2: #ffa060;
+  --text-primary: #2a2a28;
+  --text-secondary: #7a7870;
+  --text-muted: #a8a6a0;
+  --grill-bg: #dad8d2;
+  --grill-dot: rgba(0,0,0,0.05);
+}
+
+/* === BODY — matte white polycarbonate, soft-touch feel === */
+:root:has(#theme-stylesheet[href*="om-108"]) #omnichord-body {
+  background:
+    /* Soft matte diffusion — no harsh reflections */
+    radial-gradient(
+      ellipse 100% 60% at 50% 20%,
+      rgba(255,255,255,0.5),
+      transparent 70%
+    ),
+    /* Very subtle warm-to-cool gradient (like real white plastic under light) */
+    linear-gradient(
+      180deg,
+      #f2f0ec 0%,
+      #f0eee8 30%,
+      #eceae4 100%
+    );
+  box-shadow:
+    0 12px 40px rgba(0,0,0,0.18),
+    0 4px 12px rgba(0,0,0,0.1),
+    0 1px 3px rgba(0,0,0,0.06),
+    /* Soft edge definition */
+    inset 0 1px 0 rgba(255,255,255,0.8),
+    inset 0 -1px 0 rgba(0,0,0,0.04);
+}
+
+/* === BEZEL — clean white, barely visible seam === */
+:root:has(#theme-stylesheet[href*="om-108"]) #omnichord-bezel {
+  background:
+    /* Very faint vertical texture — soft-touch coating */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.004) 3px,
+      rgba(0,0,0,0.004) 4px
+    ),
+    linear-gradient(180deg, #f4f2ee 0%, #f0eee8 50%, #eceae4 100%);
+  border: 1px solid #d4d2cc;
+  box-shadow:
+    inset 0 1px 3px rgba(0,0,0,0.03),
+    inset 0 -1px 0 rgba(255,255,255,0.6);
+}
+
+/* === BRAND — clean embossed text === */
+:root:has(#theme-stylesheet[href*="om-108"]) #brand-strip {
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+:root:has(#theme-stylesheet[href*="om-108"]) .brand-name {
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.6),
+    0 -1px 0 rgba(0,0,0,0.06);
+  letter-spacing: 10px;
+}
+
+:root:has(#theme-stylesheet[href*="om-108"]) .brand-engraving {
+  opacity: 0.25;
+}
+
+/* === CHORD BUTTONS — pastel pill shapes, modern feel === */
+:root:has(#theme-stylesheet[href*="om-108"]) .chord-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    inset 0 -1px 0 rgba(0,0,0,0.06),
+    0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+:root:has(#theme-stylesheet[href*="om-108"]) .chord-btn.active {
+  box-shadow:
+    inset 0 1px 4px rgba(0,0,0,0.1),
+    0 0 12px rgba(255,107,138,0.15);
+}
+
+/* === STRINGS STRIP — light recessed channel === */
+:root:has(#theme-stylesheet[href*="om-108"]) #strings-strip {
+  background:
+    radial-gradient(
+      ellipse 80% 100% at 50% 50%,
+      rgba(255,255,255,0.3),
+      transparent
+    ),
+    #e4e2dc;
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,0.06),
+    inset 0 -1px 0 rgba(255,255,255,0.4),
+    0 1px 0 rgba(255,255,255,0.5);
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 8px;
+}
+
+/* === SLIDER KNOBS — white pill === */
+:root:has(#theme-stylesheet[href*="om-108"]) input[type="range"]::-webkit-slider-thumb {
+  background: #fff;
+  border-color: #d0cec8;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
+  width: 14px;
+  height: 14px;
+}
+
+:root:has(#theme-stylesheet[href*="om-108"]) input[type="range"]::-webkit-slider-runnable-track {
+  background: #d4d2cc;
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* === RHYTHM === */
+:root:has(#theme-stylesheet[href*="om-108"]) #rhythm-section {
+  border-top: 1px solid rgba(0,0,0,0.05);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+}
+
+/* === BEAT DOTS — soft pink LEDs === */
+:root:has(#theme-stylesheet[href*="om-108"]) .beat-dot {
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
+}
+
+:root:has(#theme-stylesheet[href*="om-108"]) .beat-dot.active {
+  box-shadow: 0 0 6px rgba(255,107,138,0.2);
+}
+
+:root:has(#theme-stylesheet[href*="om-108"]) .beat-dot.current {
+  box-shadow:
+    0 0 6px rgba(42,42,40,0.15),
+    0 0 12px rgba(42,42,40,0.06);
+}
+
+/* === SPEAKER GRILL — light perforated panel === */
+:root:has(#theme-stylesheet[href*="om-108"]) .grill-pattern {
+  background-image:
+    radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px),
+    radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-position: 0 0, 2.5px 2.5px;
+  background-color: #dcdad4;
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,0.06),
+    inset 0 -1px 0 rgba(255,255,255,0.4),
+    0 1px 0 rgba(255,255,255,0.5);
+  border: 1px solid rgba(0,0,0,0.04);
+  border-radius: 8px;
+}
+
+/* === RECORDER === */
+:root:has(#theme-stylesheet[href*="om-108"]) #recorder-section {
+  border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+:root:has(#theme-stylesheet[href*="om-108"]) #recorder-timeline {
+  background: #dcdad4;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.04);
+  border-radius: 6px;
+}
+
+/* === BUTTONS — soft white, barely there === */
+:root:has(#theme-stylesheet[href*="om-108"]) #rhythm-start-stop,
+:root:has(#theme-stylesheet[href*="om-108"]) #metronome-btn,
+:root:has(#theme-stylesheet[href*="om-108"]) .rec-btn,
+:root:has(#theme-stylesheet[href*="om-108"]) #vibrato-btn,
+:root:has(#theme-stylesheet[href*="om-108"]) #help-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    inset 0 -1px 0 rgba(0,0,0,0.04),
+    0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* === SELECTS === */
+:root:has(#theme-stylesheet[href*="om-108"]) select {
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* === CONTROLS TRAY === */
+:root:has(#theme-stylesheet[href*="om-108"]) #controls-tray {
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+/* === SHORTCUTS OVERLAY === */
+:root:has(#theme-stylesheet[href*="om-108"]) .shortcuts-content {
+  background: #f4f2ee;
+  border: 1px solid #d4d2cc;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  border-radius: 12px;
+}
+
+/* === SECTION LABELS === */
+:root:has(#theme-stylesheet[href*="om-108"]) .section-label {
+  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+}
