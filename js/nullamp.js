@@ -690,18 +690,16 @@ const Nullamp = (() => {
       glitchCtx.globalAlpha = 1;
     }
 
-    // === DATAMOSH — smear pixels between frames, always active, beat-driven ===
+    // === DATAMOSH — always-on pixel smearing, beat makes it heavier ===
     {
       const currentFrameData = glitchCtx.getImageData(0, 0, w, h);
       if (prevFrameData && prevFrameData.width === w && prevFrameData.height === h) {
         const cur = currentFrameData.data;
         const prev = prevFrameData.data;
-        const moshAmt = 0.15 + beat * 0.7; // always some smear, beat pumps it up
+        const moshAmt = 0.25 + beat * 0.65;
         const blockSize = 8;
-        // Motion-vector-style block displacement
         for (let by = 0; by < h; by += blockSize) {
           for (let bx = 0; bx < w; bx += blockSize) {
-            // Compare blocks to find "motion"
             let diff = 0;
             for (let py = 0; py < blockSize && by + py < h; py++) {
               for (let px = 0; px < blockSize && bx + px < w; px++) {
@@ -710,20 +708,21 @@ const Nullamp = (() => {
               }
             }
             diff /= (blockSize * blockSize * 2);
-            // High-motion blocks: smear from previous frame — lower threshold so transitions mosh hard
-            if (diff > 10 && seededRng() < moshAmt) {
-              const displaceX = Math.floor((Math.random() - 0.5) * (10 + beat * 30));
-              const displaceY = Math.floor((Math.random() - 0.5) * (5 + beat * 20));
+            if (diff > 5 && seededRng() < moshAmt) {
+              const displaceX = Math.floor((Math.random() - 0.5) * (12 + beat * 35));
+              const displaceY = Math.floor((Math.random() - 0.5) * (6 + beat * 25));
+              // prevBlend: how much of the old frame to keep (heavier = more morph)
+              const prevBlend = 0.6 + beat * 0.25;
+              const curBlend = 1 - prevBlend;
               for (let py = 0; py < blockSize && by + py < h; py++) {
                 for (let px = 0; px < blockSize && bx + px < w; px++) {
                   const dstIdx = ((by + py) * w + (bx + px)) * 4;
                   const srcY = Math.max(0, Math.min(h - 1, by + py + displaceY));
                   const srcX = Math.max(0, Math.min(w - 1, bx + px + displaceX));
                   const srcIdx = (srcY * w + srcX) * 4;
-                  // Blend prev frame into current for smoother morph
-                  cur[dstIdx] = Math.floor(cur[dstIdx] * 0.3 + prev[srcIdx] * 0.7);
-                  cur[dstIdx + 1] = Math.floor(cur[dstIdx + 1] * 0.3 + prev[srcIdx + 1] * 0.7);
-                  cur[dstIdx + 2] = Math.floor(cur[dstIdx + 2] * 0.3 + prev[srcIdx + 2] * 0.7);
+                  cur[dstIdx] = Math.floor(cur[dstIdx] * curBlend + prev[srcIdx] * prevBlend);
+                  cur[dstIdx + 1] = Math.floor(cur[dstIdx + 1] * curBlend + prev[srcIdx + 1] * prevBlend);
+                  cur[dstIdx + 2] = Math.floor(cur[dstIdx + 2] * curBlend + prev[srcIdx + 2] * prevBlend);
                 }
               }
             }
@@ -756,9 +755,16 @@ const Nullamp = (() => {
 
     glitchCtx.putImageData(imgData, 0, 0);
 
-    // Gaussian splay — 360 radial warp on beats
-    if (beat > 0.25) {
-      applyGaussianSplay(glitchCtx, w, h, beat, frame);
+    // Temporal feedback — blend previous composite into current for seamless morph
+    feedbackCanvas.width = w;
+    feedbackCanvas.height = h;
+    if (prevFrameData && prevFrameData.width === w) {
+      feedbackCtx.putImageData(prevFrameData, 0, 0);
+      // Heavy persistence: always keep 20-40% of previous frame (beat reduces it for responsiveness)
+      const persistence = 0.35 - beat * 0.15;
+      glitchCtx.globalAlpha = persistence;
+      glitchCtx.drawImage(feedbackCanvas, 0, 0);
+      glitchCtx.globalAlpha = 1;
     }
 
     // Draw to main canvas
