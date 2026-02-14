@@ -30,12 +30,12 @@ const Nullamp = (() => {
     {
       name: 'Plasma',
       bg: '#08081a',
-      primary: '#4080ff',
+      primary: '#5090e0',
       secondary: '#2040a0',
-      accent: '#ff40ff',
+      accent: '#d060e0',
       wave(t) {
         const h = 220 + t * 80;
-        return `hsl(${h}, 80%, ${45 + t * 20}%)`;
+        return `hsl(${h}, 65%, ${50 + t * 18}%)`;
       }
     },
     {
@@ -55,8 +55,9 @@ const Nullamp = (() => {
       secondary: '#402040',
       accent: '#8040ff',
       wave(t, frame) {
-        const h = (t * 300 + (frame || 0) * 1.5) % 360;
-        return `hsl(${h}, 85%, 55%)`;
+        // Full 360 hue sweep across the wave, slowly rotating with time
+        const h = (t * 360 + (frame || 0) * 2.5) % 360;
+        return `hsl(${h}, 90%, 60%)`;
       }
     },
     {
@@ -1297,6 +1298,9 @@ const Nullamp = (() => {
       energy = energy / ((band.freqEnd - band.freqStart) * 255) * sens;
       const t_norm = bi / bands.length;
 
+      // Bass bands = smooth curves, high bands = sharper for transient detail
+      const useSmooth = bi < 2;
+
       for (let pass = 0; pass < 3; pass++) {
         ctx.beginPath();
         const yShift = (pass - 1) * 1.5;
@@ -1315,37 +1319,65 @@ const Nullamp = (() => {
           if (bi === 0 && pass === 2) wavePoints.push({ x, y });
         }
 
-        // Smooth quadratic curves through midpoints
-        ctx.moveTo(pts[0].x, pts[0].y);
-        for (let i = 1; i < pts.length - 1; i++) {
-          const mx = (pts[i].x + pts[i + 1].x) / 2;
-          const my = (pts[i].y + pts[i + 1].y) / 2;
-          ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+        if (useSmooth) {
+          // Smooth quadratic curves for bass — catches deep strums
+          ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length - 1; i++) {
+            const mx = (pts[i].x + pts[i + 1].x) / 2;
+            const my = (pts[i].y + pts[i + 1].y) / 2;
+            ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+          }
+          ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+        } else {
+          // Sharp lineTo for high-freq bands — snappy transient detail
+          ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
         }
-        ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
 
         const color = scheme.wave(t_norm, frame);
 
         if (pass === 0) {
+          // Big outer glow — CRT phosphor bloom
           ctx.strokeStyle = color;
-          ctx.lineWidth = band.thickness * 4 + beat * 8;
+          ctx.lineWidth = band.thickness * 5 + beat * 10;
           ctx.shadowColor = color;
-          ctx.shadowBlur = 20 + beat * 25;
-          ctx.globalAlpha = 0.08 + energy * 0.1;
+          ctx.shadowBlur = 25 + beat * 30;
+          ctx.globalAlpha = 0.07 + energy * 0.1;
         } else if (pass === 1) {
+          // Mid glow
           ctx.strokeStyle = color;
           ctx.lineWidth = band.thickness * 2.5 + beat * 3;
           ctx.shadowColor = scheme.accent;
-          ctx.shadowBlur = 8;
-          ctx.globalAlpha = 0.25 + energy * 0.25;
+          ctx.shadowBlur = 12 + beat * 8;
+          ctx.globalAlpha = 0.2 + energy * 0.25;
         } else {
+          // Bright core — white hot
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = band.thickness + 0.5;
-          ctx.shadowColor = scheme.accent;
-          ctx.shadowBlur = 4;
-          ctx.globalAlpha = 0.6 + energy * 0.4;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 6;
+          ctx.globalAlpha = 0.55 + energy * 0.4;
         }
         ctx.stroke();
+      }
+
+      // Noise dots along the wave — sparkle/grain on the bright pass
+      if (energy > 0.05) {
+        const color = scheme.wave(t_norm, frame);
+        for (let i = 0; i < points; i += 3) {
+          if (Math.random() > energy * 1.5) continue;
+          const t = i / points;
+          const x = waveX + t * waveW;
+          const env = Math.sin(t * Math.PI);
+          const di = Math.floor(t * data.length);
+          const sample = (data[di] / 128 - 1) * sens;
+          const synthetic = Math.sin(t * Math.PI * (3 + bi * 2) + frame * 0.02 * band.speed) * energy;
+          const combined = (sample * 0.4 + synthetic * 0.6) * band.amp;
+          const y = cy + combined * h * env + (Math.random() - 0.5) * 6;
+          ctx.fillStyle = Math.random() > 0.5 ? '#ffffff' : color;
+          ctx.globalAlpha = 0.3 + Math.random() * 0.4;
+          ctx.fillRect(x, y, 1, 1);
+        }
       }
     }
     ctx.shadowBlur = 0;
@@ -1870,18 +1902,74 @@ const Nullamp = (() => {
   }
 
   // === POST-PROCESSING ===
+  // Offscreen canvas for barrel distortion (reused each frame)
+  let barrelCanvas = null;
+  let barrelCtx = null;
+
   function postProcess(w, h) {
+    // CRT barrel distortion — grid-based drawImage (GPU-accelerated, no per-pixel)
+    // Copy current frame to offscreen buffer
+    if (!barrelCanvas) {
+      barrelCanvas = document.createElement('canvas');
+      barrelCtx = barrelCanvas.getContext('2d');
+    }
+    barrelCanvas.width = canvas.width;
+    barrelCanvas.height = canvas.height;
+    barrelCtx.drawImage(canvas, 0, 0);
+
+    // Clear and redraw with barrel warp via grid slices
+    ctx.clearRect(0, 0, w, h);
+    const gridN = 16; // 16x16 grid — good balance of quality vs speed
+    const cellW = w / gridN;
+    const cellH = h / gridN;
+    const strength = 0.12; // subtle CRT bulge
+
+    for (let gy = 0; gy < gridN; gy++) {
+      for (let gx = 0; gx < gridN; gx++) {
+        // Source rect (uniform grid from the original)
+        const sx = gx * cellW;
+        const sy = gy * cellH;
+
+        // Destination: barrel-distort the grid corners outward from center
+        // Center of this cell in normalized coords [-1, 1]
+        const nx = (gx + 0.5) / gridN * 2 - 1;
+        const ny = (gy + 0.5) / gridN * 2 - 1;
+        const r2 = nx * nx + ny * ny;
+        const distort = 1 + r2 * strength;
+
+        // Distorted center position
+        const dx = (nx * distort + 1) / 2 * w - cellW / 2;
+        const dy = (ny * distort + 1) / 2 * h - cellH / 2;
+        // Scale stretches slightly at edges
+        const scaleX = cellW * distort;
+        const scaleY = cellH * distort;
+
+        ctx.drawImage(barrelCanvas, sx * (canvas.width / w), sy * (canvas.height / h),
+          cellW * (canvas.width / w), cellH * (canvas.height / h),
+          dx, dy, scaleX, scaleY);
+      }
+    }
+
     // Scanlines
     ctx.fillStyle = 'rgba(0,0,0,0.06)';
     for (let y = 0; y < h; y += 3) {
       ctx.fillRect(0, y, w, 1);
     }
-    // Vignette
-    const r = Math.max(w, h) * 0.72;
-    const grad = ctx.createRadialGradient(w / 2, h / 2, r * 0.35, w / 2, h / 2, r);
+
+    // Vignette (stronger at edges to sell the CRT look)
+    const vr = Math.max(w, h) * 0.68;
+    const grad = ctx.createRadialGradient(w / 2, h / 2, vr * 0.3, w / 2, h / 2, vr);
     grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+    grad.addColorStop(0.7, 'rgba(0,0,0,0.15)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.55)');
     ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Subtle screen edge highlight (CRT glass reflection)
+    const glassGrad = ctx.createRadialGradient(w * 0.35, h * 0.3, 0, w * 0.35, h * 0.3, w * 0.5);
+    glassGrad.addColorStop(0, 'rgba(255,255,255,0.03)');
+    glassGrad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = glassGrad;
     ctx.fillRect(0, 0, w, h);
   }
 
