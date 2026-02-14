@@ -206,4 +206,17 @@
   #nullamp-controls select {
     min-width: 80px;
   }
+
+  #nullamp-filename {
+    max-width: 120px;
+    font-size: 8px;
+  }
+
+  #nullamp-controls input[type="range"] {
+    width: 60px;
+  }
+
+  .nullamp-ctrl-group {
+    gap: 4px;
+  }
 }

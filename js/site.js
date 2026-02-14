@@ -2,6 +2,9 @@
 // White void. Real instruments shown small. Click to zoom up and play.
 const Site = (() => {
   const CAROUSEL_SCALE = 0.3;
+  const MOBILE_SCALE = 0.55;
+  const mobileQuery = window.matchMedia('(max-width: 768px)');
+  const isMobile = () => mobileQuery.matches;
 
   const PRODUCTS = [
     {
@@ -10,7 +13,7 @@ const Site = (() => {
       category: 'INSTRUMENT',
       accent: '#c8a84e',
       ready: true,
-      labelGap: -30, // D-shape curves inward — pull label up
+      labelGap: 10,
       getPageBg: () => {
         return getComputedStyle(document.documentElement).getPropertyValue('--page-bg').trim() || '#0a0a10';
       }
@@ -82,26 +85,35 @@ const Site = (() => {
 
       el.classList.add('wm-open');
       el.classList.remove('hover-glow');
-      el.style.transition = 'left 0.55s cubic-bezier(0.16, 1, 0.3, 1), top 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease';
-      // Animate filter on next frame so transition catches it
-      requestAnimationFrame(() => {
-        el.style.filter = 'brightness(1) saturate(1)';
-      });
-      el.style.left = '50%';
-      el.style.top = '50%';
-      el.style.transform = 'translate(-50%, -50%) scale(1)';
 
-      // Remove transition after animation so drag works freely
-      setTimeout(() => {
-        el.style.transition = '';
-        // Re-size canvas-based instruments now that scale is 1
-        if (id === 'insomnichord' && typeof Strings !== 'undefined' && Strings.resize) {
-          Strings.resize();
-        }
-        if (id === 'nullamp' && typeof Nullamp !== 'undefined' && Nullamp.resize) {
-          Nullamp.resize();
-        }
-      }, 600);
+      if (isMobile()) {
+        // Mobile: CSS handles full-viewport via .wm-open rules
+        el.style.left = '';
+        el.style.top = '';
+        el.style.transform = '';
+        el.style.filter = '';
+        el.style.transition = 'opacity 0.3s ease';
+        // Resize canvases after layout settles
+        requestAnimationFrame(() => {
+          if (id === 'insomnichord' && typeof Strings !== 'undefined' && Strings.resize) Strings.resize();
+          if (id === 'nullamp' && typeof Nullamp !== 'undefined' && Nullamp.resize) Nullamp.resize();
+          el.style.transition = '';
+        });
+      } else {
+        // Desktop: animated zoom
+        el.style.transition = 'left 0.55s cubic-bezier(0.16, 1, 0.3, 1), top 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease';
+        requestAnimationFrame(() => {
+          el.style.filter = 'brightness(1) saturate(1)';
+        });
+        el.style.left = '50%';
+        el.style.top = '50%';
+        el.style.transform = 'translate(-50%, -50%) scale(1)';
+        setTimeout(() => {
+          el.style.transition = '';
+          if (id === 'insomnichord' && typeof Strings !== 'undefined' && Strings.resize) Strings.resize();
+          if (id === 'nullamp' && typeof Nullamp !== 'undefined' && Nullamp.resize) Nullamp.resize();
+        }, 600);
+      }
 
       // Hide labels
       hideLabels();
@@ -118,6 +130,11 @@ const Site = (() => {
         }
       });
 
+      // Lock body scroll on mobile
+      if (isMobile()) {
+        document.body.style.overflow = 'hidden';
+      }
+
       // Show back button
       const backBtn = document.getElementById('back-btn');
       if (backBtn) backBtn.classList.remove('back-hidden');
@@ -133,15 +150,24 @@ const Site = (() => {
 
       el.classList.remove('wm-open');
 
-      // Animate back to carousel position
-      const pos = carouselPositions[id];
-      if (pos) {
-        el.style.transition = 'left 0.45s cubic-bezier(0.4, 0, 0.2, 1), top 0.45s cubic-bezier(0.4, 0, 0.2, 1), transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease';
-        el.style.left = pos.x + 'px';
-        el.style.top = pos.y + 'px';
-        el.style.transform = `translate(-50%, -50%) scale(${CAROUSEL_SCALE})`;
-        el.style.filter = 'brightness(0.85) saturate(0.8)';
-        setTimeout(() => { el.style.transition = ''; }, 500);
+      if (isMobile()) {
+        // Mobile: clear inline styles, let CSS flow handle it
+        el.style.left = '';
+        el.style.top = '';
+        el.style.transform = '';
+        el.style.filter = '';
+        el.style.transition = '';
+      } else {
+        // Desktop: animate back to carousel position
+        const pos = carouselPositions[id];
+        if (pos) {
+          el.style.transition = 'left 0.45s cubic-bezier(0.4, 0, 0.2, 1), top 0.45s cubic-bezier(0.4, 0, 0.2, 1), transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease';
+          el.style.left = pos.x + 'px';
+          el.style.top = pos.y + 'px';
+          el.style.transform = `translate(-50%, -50%) scale(${CAROUSEL_SCALE})`;
+          el.style.filter = 'brightness(0.85) saturate(0.8)';
+          setTimeout(() => { el.style.transition = ''; }, 500);
+        }
       }
 
       // Show other windows again
@@ -158,6 +184,11 @@ const Site = (() => {
 
       // Show labels
       setTimeout(() => showLabels(), 200);
+
+      // Unlock body scroll on mobile
+      if (isMobile()) {
+        document.body.style.overflow = '';
+      }
 
       // Hide back button
       const backBtn = document.getElementById('back-btn');
@@ -195,19 +226,25 @@ const Site = (() => {
     window.addEventListener('resize', () => {
       if (!WindowManager.isOpen(WindowManager.getActive())) {
         layoutCarousel();
-        positionLabels();
+        arrangeLabels();
       }
     });
 
-    // 3D tilt on carousel windows
-    initTiltEffect();
+    // 3D tilt on carousel windows (desktop only)
+    if (!isMobile()) initTiltEffect();
   }
 
   // --- Carousel layout ---
   function layoutCarousel() {
+    if (isMobile()) {
+      layoutCarouselMobile();
+      return;
+    }
+    layoutCarouselDesktop();
+  }
+
+  function layoutCarouselDesktop() {
     const count = PRODUCTS.length;
-    // Calculate visual width of each window at scale
-    // Use the first window's actual width, or default to 1100
     const sampleEl = WindowManager.getEl(PRODUCTS[0].id);
     const itemWidth = (sampleEl?.offsetWidth || 1100) * CAROUSEL_SCALE;
     const gap = 50;
@@ -229,6 +266,20 @@ const Site = (() => {
     });
   }
 
+  function layoutCarouselMobile() {
+    // On mobile, CSS handles the flow layout — just clear inline styles
+    PRODUCTS.forEach(product => {
+      const el = WindowManager.getEl(product.id);
+      if (el && !WindowManager.isOpen(product.id)) {
+        el.style.left = '';
+        el.style.top = '';
+        el.style.transform = '';
+        el.style.opacity = '1';
+        el.style.filter = '';
+      }
+    });
+  }
+
   // --- Labels ---
   function buildLabels() {
     const container = document.getElementById('carousel-labels');
@@ -246,10 +297,43 @@ const Site = (() => {
       container.appendChild(label);
     });
 
-    positionLabels();
+    arrangeLabels();
   }
 
-  function positionLabels() {
+  function arrangeLabels() {
+    if (isMobile()) {
+      arrangeLabelsForMobile();
+    } else {
+      arrangeLabelsForDesktop();
+    }
+  }
+
+  function arrangeLabelsForMobile() {
+    // Move labels into #window-layer, after each corresponding window
+    PRODUCTS.forEach(product => {
+      const label = document.querySelector(`.carousel-label[data-product="${product.id}"]`);
+      const windowEl = WindowManager.getEl(product.id);
+      if (label && windowEl && label.previousElementSibling !== windowEl) {
+        windowEl.after(label);
+      }
+    });
+  }
+
+  function arrangeLabelsForDesktop() {
+    // Move labels back into #carousel-labels container
+    const labelContainer = document.getElementById('carousel-labels');
+    if (!labelContainer) return;
+
+    PRODUCTS.forEach(product => {
+      const label = document.querySelector(`.carousel-label[data-product="${product.id}"]`);
+      if (label && label.parentNode !== labelContainer) {
+        labelContainer.appendChild(label);
+      }
+    });
+    positionLabelsDesktop();
+  }
+
+  function positionLabelsDesktop() {
     const labels = document.querySelectorAll('.carousel-label');
     labels.forEach(label => {
       const id = label.dataset.product;
@@ -258,7 +342,6 @@ const Site = (() => {
       const product = PRODUCTS.find(p => p.id === id);
       if (!pos || !el || !product) return;
 
-      // Position below the scaled window (per-product offset for non-rectangular shapes)
       const visualHeight = el.offsetHeight * CAROUSEL_SCALE;
       const gap = 20 + (product.labelGap || 0);
       label.style.left = pos.x + 'px';
@@ -268,14 +351,22 @@ const Site = (() => {
 
   function hideLabels() {
     labelsVisible = false;
-    const container = document.getElementById('carousel-labels');
-    if (container) container.classList.add('labels-hidden');
+    if (isMobile()) {
+      document.querySelectorAll('.carousel-label').forEach(l => l.style.display = 'none');
+    } else {
+      const container = document.getElementById('carousel-labels');
+      if (container) container.classList.add('labels-hidden');
+    }
   }
 
   function showLabels() {
     labelsVisible = true;
-    const container = document.getElementById('carousel-labels');
-    if (container) container.classList.remove('labels-hidden');
+    if (isMobile()) {
+      document.querySelectorAll('.carousel-label').forEach(l => l.style.display = '');
+    } else {
+      const container = document.getElementById('carousel-labels');
+      if (container) container.classList.remove('labels-hidden');
+    }
   }
 
   // --- Background ---

@@ -249,3 +249,66 @@
   width: min(72vh, 75vw);
   aspect-ratio: 1 / 1;
 }
+
+/* === MOBILE === */
+@media (max-width: 768px) {
+  /* Carousel mode — flow layout, no absolute positioning */
+  .wm-window {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+  }
+
+  .wm-window:not(.wm-open) {
+    max-width: 85vw;
+    max-height: 50vh;
+  }
+
+  #wm-insomnichord:not(.wm-open) {
+    width: 80vw;
+  }
+
+  #wm-drumbyte:not(.wm-open) {
+    width: 80vw;
+  }
+
+  #wm-nullamp:not(.wm-open) {
+    width: 65vw;
+  }
+
+  /* Open state — full viewport overlay */
+  .wm-window.wm-open {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    border-radius: 0;
+    z-index: 500 !important;
+    transform: none !important;
+  }
+
+  .wm-window.wm-open .wm-content {
+    max-height: calc(100vh - 34px);
+    overflow: auto;
+  }
+
+  /* Nullamp open on mobile — override desktop aspect-ratio */
+  #wm-nullamp.wm-open {
+    width: 100vw !important;
+    aspect-ratio: auto;
+  }
+
+  /* Chromeless — full brightness on mobile, clip overflow */
+  .wm-chromeless {
+    filter: none !important;
+    overflow: hidden !important;
+  }
+
+  .wm-chromeless.wm-open {
+    overflow: hidden !important;
+  }
+}

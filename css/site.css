@@ -23,17 +23,22 @@ html, body {
 /* === LOGO === */
 #site-logo {
   position: fixed;
-  top: 20px;
-  left: 24px;
+  top: 16px;
+  left: 20px;
   z-index: 5;
-  font-size: 14px;
-  color: #ccc;
-  letter-spacing: 1px;
   user-select: none;
-  transition: color 0.6s ease;
 }
 
-.logo-face { opacity: 0.5; }
+#site-logo-img {
+  height: 28px;
+  width: auto;
+  opacity: 0.35;
+  transition: opacity 0.3s ease;
+}
+
+#site-logo-img:hover {
+  opacity: 0.55;
+}
 
 /* === BACK BUTTON === */
 #back-btn {
@@ -163,4 +168,71 @@ html, body {
   letter-spacing: 3px;
   color: rgba(255,255,255,0.15);
   text-transform: uppercase;
+}
+
+/* === MOBILE === */
+@media (max-width: 768px) {
+  html, body {
+    overflow: auto;
+    overflow-x: hidden;
+  }
+
+  #site-bg {
+    position: fixed;
+  }
+
+  #site-logo {
+    top: 10px;
+    left: 12px;
+  }
+
+  #site-logo-img {
+    height: 22px;
+  }
+
+  #back-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    top: 12px;
+    right: 14px;
+    z-index: 600;
+  }
+
+  #window-layer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 50px 0 40px;
+    gap: 8px;
+    min-height: 100vh;
+    pointer-events: auto;
+  }
+
+  #carousel-labels {
+    position: relative;
+    inset: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .carousel-label {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    text-align: center;
+    padding: 6px 0 20px;
+  }
+
+  .cl-name {
+    font-size: 15px;
+  }
+
+  .placeholder-content {
+    min-height: 160px;
+    padding: 20px 16px;
+  }
 }
