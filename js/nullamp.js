@@ -1902,61 +1902,14 @@ const Nullamp = (() => {
   }
 
   // === POST-PROCESSING ===
-  // Offscreen canvas for barrel distortion (reused each frame)
-  let barrelCanvas = null;
-  let barrelCtx = null;
-
   function postProcess(w, h) {
-    // CRT barrel distortion — grid-based drawImage (GPU-accelerated, no per-pixel)
-    // Copy current frame to offscreen buffer
-    if (!barrelCanvas) {
-      barrelCanvas = document.createElement('canvas');
-      barrelCtx = barrelCanvas.getContext('2d');
-    }
-    barrelCanvas.width = canvas.width;
-    barrelCanvas.height = canvas.height;
-    barrelCtx.drawImage(canvas, 0, 0);
-
-    // Clear and redraw with barrel warp via grid slices
-    ctx.clearRect(0, 0, w, h);
-    const gridN = 16; // 16x16 grid — good balance of quality vs speed
-    const cellW = w / gridN;
-    const cellH = h / gridN;
-    const strength = 0.12; // subtle CRT bulge
-
-    for (let gy = 0; gy < gridN; gy++) {
-      for (let gx = 0; gx < gridN; gx++) {
-        // Source rect (uniform grid from the original)
-        const sx = gx * cellW;
-        const sy = gy * cellH;
-
-        // Destination: barrel-distort the grid corners outward from center
-        // Center of this cell in normalized coords [-1, 1]
-        const nx = (gx + 0.5) / gridN * 2 - 1;
-        const ny = (gy + 0.5) / gridN * 2 - 1;
-        const r2 = nx * nx + ny * ny;
-        const distort = 1 + r2 * strength;
-
-        // Distorted center position
-        const dx = (nx * distort + 1) / 2 * w - cellW / 2;
-        const dy = (ny * distort + 1) / 2 * h - cellH / 2;
-        // Scale stretches slightly at edges
-        const scaleX = cellW * distort;
-        const scaleY = cellH * distort;
-
-        ctx.drawImage(barrelCanvas, sx * (canvas.width / w), sy * (canvas.height / h),
-          cellW * (canvas.width / w), cellH * (canvas.height / h),
-          dx, dy, scaleX, scaleY);
-      }
-    }
-
     // Scanlines
     ctx.fillStyle = 'rgba(0,0,0,0.06)';
     for (let y = 0; y < h; y += 3) {
       ctx.fillRect(0, y, w, 1);
     }
 
-    // Vignette (stronger at edges to sell the CRT look)
+    // Vignette (heavy at edges for CRT feel)
     const vr = Math.max(w, h) * 0.68;
     const grad = ctx.createRadialGradient(w / 2, h / 2, vr * 0.3, w / 2, h / 2, vr);
     grad.addColorStop(0, 'rgba(0,0,0,0)');
