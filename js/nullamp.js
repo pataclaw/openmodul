@@ -138,24 +138,21 @@ const Nullamp = (() => {
   let songSplaySpeed = 0.03;  // gaussian splay rotation speed (0.01-0.06)
   let songCutStyle = 0.5;     // hard cuts (1.0) vs crossfades (0.0) bias
 
-  // === BRIDGE DETECTION STATE ===
+  // === BRIDGE DETECTION + LATTICE STATE ===
   let energyHistory = [];
   const ENERGY_WINDOW = 180;
   let bridgeAmount = 0;
   let latticeAnchors = [];
-
   const BRIDGE_ERRORS = [
     'ERR_BRIDGE_DETECTED', 'SIGNAL::LOST', '>>> BREAKDOWN <<<',
     'BPM_DRIFT: NaN', 'CARRIER_FADE 0x00', 'SYNC_LOST ///',
     'FREQ_COLLAPSE', '!!BRIDGE!!', 'DATA_VOID', 'NULL_SIGNAL',
     '---BREAK---', 'DROPOUT@', 'PHASE::SHIFT', 'dB=-Inf',
-    '0000000000', 'SILENCE_ERR', 'BEAT_NOT_FOUND', 'RX:TIMEOUT',
   ];
   const LATTICE_MSGS = [
     'ANALYZING', 'SCANNING FREQ', 'DECODE', 'MAPPING',
     'TRACE SIGNAL', 'LOCK ON', 'SAMPLING', 'READING',
     'PARSE WAVE', 'INTERCEPT', 'ISOLATE', 'EXTRACT',
-    'DEMOD', 'FFT RUNNING', 'QUANTIZE', 'RESOLVE',
   ];
 
   // Pexels video state
@@ -1304,7 +1301,6 @@ const Nullamp = (() => {
         ctx.beginPath();
         const yShift = (pass - 1) * 1.5;
 
-        // Pre-compute points for smooth quadratic interpolation
         const pts = [];
         for (let i = 0; i <= points; i++) {
           const t = i / points;
@@ -1355,7 +1351,7 @@ const Nullamp = (() => {
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
 
-    // Bridge overlays — error text + lattice (no spin, ever)
+    // Bridge overlays — error text + lattice (waves stay horizontal, always)
     if (bridgeAmount > 0.15 && wavePoints.length > 10) {
       drawWaveErrors(wavePoints, scheme, frame, beat);
     }
@@ -1364,24 +1360,21 @@ const Nullamp = (() => {
     }
   }
 
-  // === ERROR TEXT ALONG WAVEFORM ===
+  // === ERROR TEXT ALONG WAVEFORM (during bridges) ===
   function drawWaveErrors(wavePoints, scheme, frame, beat) {
     ctx.save();
     ctx.font = '9px monospace';
     const numErrors = 2 + Math.floor(bridgeAmount * 5);
     const step = Math.floor(wavePoints.length / (numErrors + 1));
-
     for (let e = 0; e < numErrors; e++) {
       const idx = step * (e + 1) + Math.floor(Math.sin(frame * 0.03 + e) * step * 0.3);
       const clamped = Math.max(0, Math.min(wavePoints.length - 2, idx));
       const pt = wavePoints[clamped];
       const ptNext = wavePoints[Math.min(clamped + 1, wavePoints.length - 1)];
       const angle = Math.atan2(ptNext.y - pt.y, ptNext.x - pt.x);
-
       let errIdx = (Math.floor(frame * 0.05) + e * 3) % BRIDGE_ERRORS.length;
       if (beat > 0.4) errIdx = Math.floor(Math.random() * BRIDGE_ERRORS.length);
       let errText = BRIDGE_ERRORS[errIdx];
-
       if (beat > 0.3) {
         const chars = errText.split('');
         for (let c = 0; c < chars.length; c++) {
@@ -1389,7 +1382,6 @@ const Nullamp = (() => {
         }
         errText = chars.join('');
       }
-
       ctx.save();
       ctx.translate(pt.x, pt.y);
       ctx.rotate(angle);
@@ -1404,43 +1396,37 @@ const Nullamp = (() => {
     ctx.restore();
   }
 
-  // === ASCII LATTICE — lines from wave to anchor points with analysis text ===
+  // === ASCII LATTICE — analysis lines from wave to anchor points ===
   function drawLattice(w, h, wavePoints, scheme, frame, beat) {
     if (bridgeAmount < 0.1) {
       latticeAnchors = latticeAnchors.filter(a => { a.life -= 0.02; return a.life > 0; });
       if (latticeAnchors.length === 0) return;
     }
-
-    // Spawn new anchors during bridges
     if (bridgeAmount > 0.2 && latticeAnchors.length < 8 && Math.random() < bridgeAmount * 0.08) {
       const waveIdx = Math.floor(Math.random() * wavePoints.length);
       const wp = wavePoints[waveIdx];
-      const angle = (Math.random() - 0.5) * Math.PI;
+      const ang = (Math.random() - 0.5) * Math.PI;
       const dist = 40 + Math.random() * 120;
       latticeAnchors.push({
         waveIdx,
-        ax: wp.x + Math.cos(angle) * dist,
-        ay: wp.y + Math.sin(angle) * dist - 30,
+        ax: wp.x + Math.cos(ang) * dist,
+        ay: wp.y + Math.sin(ang) * dist - 30,
         msg: LATTICE_MSGS[Math.floor(Math.random() * LATTICE_MSGS.length)],
         life: 1, dots: 0, progress: 0, charOffset: 0,
       });
     }
-
     ctx.save();
     for (const anchor of latticeAnchors) {
       const wIdx = Math.min(anchor.waveIdx, wavePoints.length - 1);
       const wp = wavePoints[wIdx];
       if (!wp) continue;
-
       anchor.dots = (anchor.dots + 0.04) % 4;
       anchor.progress = Math.min(1, anchor.progress + 0.015);
       anchor.charOffset += 0.3;
-
       const alpha = anchor.life * Math.max(bridgeAmount, 0.1);
       const px = wp.x + (anchor.ax - wp.x) * anchor.progress;
       const py = wp.y + (anchor.ay - wp.y) * anchor.progress;
 
-      // Dashed lattice line
       ctx.beginPath();
       ctx.moveTo(wp.x, wp.y);
       const mx = (wp.x + px) / 2 + Math.sin(frame * 0.03 + anchor.waveIdx) * 10;
@@ -1453,7 +1439,6 @@ const Nullamp = (() => {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Anchor dot + crosshair
       ctx.beginPath();
       ctx.arc(px, py, 2 + beat * 2, 0, Math.PI * 2);
       ctx.fillStyle = scheme.accent;
@@ -1468,18 +1453,15 @@ const Nullamp = (() => {
       ctx.globalAlpha = alpha * 0.4;
       ctx.stroke();
 
-      // Wave attachment dot
       ctx.beginPath();
       ctx.arc(wp.x, wp.y, 2, 0, Math.PI * 2);
       ctx.fillStyle = scheme.accent;
       ctx.globalAlpha = alpha * 0.6;
       ctx.fill();
 
-      // Analysis text
       if (anchor.progress > 0.5) {
         const textAlpha = (anchor.progress - 0.5) * 2 * alpha;
-        const dotsStr = '.'.repeat(Math.floor(anchor.dots));
-        let msg = anchor.msg + dotsStr;
+        let msg = anchor.msg + '.'.repeat(Math.floor(anchor.dots));
         if (beat > 0.4) {
           const chars = msg.split('');
           for (let c = 0; c < chars.length; c++) {
@@ -1491,7 +1473,6 @@ const Nullamp = (() => {
         ctx.globalAlpha = textAlpha * 0.8;
         ctx.fillStyle = scheme.accent;
         ctx.fillText(msg, px + 6, py - 3);
-
         if (anchor.progress > 0.8) {
           ctx.globalAlpha = textAlpha * 0.4;
           ctx.fillStyle = scheme.primary;
@@ -1502,10 +1483,7 @@ const Nullamp = (() => {
         }
       }
     }
-
-    for (const anchor of latticeAnchors) {
-      if (bridgeAmount < 0.15) anchor.life -= 0.01;
-    }
+    for (const a of latticeAnchors) { if (bridgeAmount < 0.15) a.life -= 0.01; }
     latticeAnchors = latticeAnchors.filter(a => a.life > 0);
     ctx.restore();
   }
@@ -1677,13 +1655,11 @@ const Nullamp = (() => {
     const avg = sum / 10 / 255;
     smoothBeat = Math.max(avg, smoothBeat * 0.92);
 
-    // Bridge detection — only when audio is playing
     if (!fileLoaded) { bridgeAmount = 0; return smoothBeat; }
 
     let totalEnergy = 0;
     for (let i = 0; i < freqArray.length; i++) totalEnergy += freqArray[i] * freqArray[i];
     totalEnergy = Math.sqrt(totalEnergy / freqArray.length) / 255;
-
     energyHistory.push(totalEnergy);
     if (energyHistory.length > ENERGY_WINDOW) energyHistory.shift();
 
@@ -1695,8 +1671,7 @@ const Nullamp = (() => {
       bassNow /= (6 * 255);
       const energyDrop = Math.max(0, 1 - recentAvg / Math.max(0.01, longAvg));
       const bassDrop = bassNow < 0.15 ? 1 : 0;
-      const bridgeRaw = Math.max(energyDrop * 1.5, bassDrop * 0.7);
-      bridgeAmount = bridgeAmount * 0.95 + Math.min(1, bridgeRaw) * 0.05;
+      bridgeAmount = bridgeAmount * 0.95 + Math.min(1, Math.max(energyDrop * 1.5, bassDrop * 0.7)) * 0.05;
     }
 
     return smoothBeat;
