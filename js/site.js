@@ -79,8 +79,11 @@ const Site = (() => {
 
       el.classList.add('wm-open');
       el.classList.remove('hover-glow');
-      el.style.filter = '';
       el.style.transition = 'left 0.55s cubic-bezier(0.16, 1, 0.3, 1), top 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease';
+      // Animate filter on next frame so transition catches it
+      requestAnimationFrame(() => {
+        el.style.filter = 'brightness(1) saturate(1)';
+      });
       el.style.left = '50%';
       el.style.top = '50%';
       el.style.transform = 'translate(-50%, -50%) scale(1)';
