@@ -1784,7 +1784,8 @@ const Nullamp = (() => {
       }
     }
 
-    // --- Bridge detection ---
+    // --- Bridge detection (only when audio is loaded) ---
+    if (!fileLoaded) { bridgeAmount = 0; return smoothBeat; }
     // Full spectrum RMS energy
     let totalEnergy = 0;
     for (let i = 0; i < freqArray.length; i++) totalEnergy += freqArray[i] * freqArray[i];
