@@ -12,6 +12,9 @@
   <!-- Nullamp visualizer -->
   <link rel="stylesheet" href="css/nullamp.css">
 
+  <!-- Gum Modul effects pedal -->
+  <link rel="stylesheet" href="css/gummodul.css">
+
   <!-- Insomnichord instrument -->
   <link rel="stylesheet" href="css/theme-engine.css">
   <link rel="stylesheet" href="css/base.css">
@@ -270,29 +273,137 @@
     </div>
     <!-- end Insomnichord window -->
 
-    <!-- ========== DRUMBYTE WINDOW (placeholder) ========== -->
-    <div id="wm-drumbyte" class="wm-window wm-not-ready" style="--wm-accent: #e05030;">
-      <div class="wm-titlebar">
-        <div class="wm-accent"></div>
-        <span class="wm-title">Drumbyte</span>
-        <div class="wm-controls">
-          <button class="wm-btn wm-minimize">_</button>
-          <button class="wm-btn wm-close">&times;</button>
-        </div>
-      </div>
-      <div class="wm-content" style="background: #1a1614;">
-        <div class="placeholder-content">
-          <div class="placeholder-ascii">+--+--+--+--+
-|  |  |  |  |
-+--+--+--+--+
-|  |  |  |  |
-+--+--+--+--+
-|  |  |  |  |
-+--+--+--+--+
-|  |  |  |  |
-+--+--+--+--+</div>
-          <h2>DRUMBYTE</h2>
-          <p>COMING SOON</p>
+    <!-- ========== GUM MODUL (chromeless — raw stompbox) ========== -->
+    <div id="wm-gummodul" class="wm-window wm-chromeless" style="--wm-accent: #e8a0b8;">
+      <div class="wm-content">
+        <div id="gummodul-body" class="skin-gum">
+          <input type="file" id="gummodul-file" accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a">
+
+          <div class="gm-brand">
+            <div>
+              <div class="gm-brand-name">Gum Modul</div>
+              <div class="gm-brand-sub">Analog Effects Processor</div>
+            </div>
+          </div>
+
+          <div class="gm-input-section">
+            <div class="gm-dropzone" id="gm-dropzone">
+              <span class="drop-icon">&#9835;</span>
+              <span class="drop-text" id="gm-drop-text">Drop audio file or click to browse</span>
+            </div>
+            <div class="gm-source-btns">
+              <button class="gm-source-btn active" data-source="file">FILE</button>
+              <button class="gm-source-btn" data-source="mic">MIC</button>
+              <button class="gm-source-btn" data-source="osc">TEST</button>
+            </div>
+            <div class="gm-playback-btns">
+              <button class="gm-play-btn" id="gm-playpause" title="Play / Pause">&#9654;</button>
+              <button class="gm-play-btn" id="gm-stop" title="Stop">&#9632;</button>
+            </div>
+            <div class="gm-knob-group">
+              <canvas class="gm-knob-canvas" data-knob="drive" width="96" height="96"></canvas>
+              <div class="gm-knob-label">Drive</div>
+              <div class="gm-knob-value"></div>
+            </div>
+          </div>
+
+          <div class="gm-effects-row">
+            <!-- Filter MF-101 -->
+            <div class="gm-effect" id="gm-fx-filter">
+              <div class="gm-effect-header">
+                <div>
+                  <div class="gm-effect-name">Low-Pass Filter</div>
+                  <div class="gm-effect-model">MF-101</div>
+                </div>
+                <button class="gm-bypass" data-fx="filter">
+                  <span class="gm-led on"></span>
+                  <span>ON</span>
+                </button>
+              </div>
+              <div class="gm-knobs">
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="filter-cutoff" width="96" height="96"></canvas><div class="gm-knob-label">Cutoff</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="filter-resonance" width="96" height="96"></canvas><div class="gm-knob-label">Resonance</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="filter-env" width="96" height="96"></canvas><div class="gm-knob-label">Env Amt</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="filter-lfo" width="96" height="96"></canvas><div class="gm-knob-label">LFO Rate</div><div class="gm-knob-value"></div></div>
+              </div>
+            </div>
+
+            <!-- Ring Mod MF-102 -->
+            <div class="gm-effect" id="gm-fx-ringmod">
+              <div class="gm-effect-header">
+                <div>
+                  <div class="gm-effect-name">Ring Mod</div>
+                  <div class="gm-effect-model">MF-102</div>
+                </div>
+                <button class="gm-bypass" data-fx="ringmod">
+                  <span class="gm-led on"></span>
+                  <span>ON</span>
+                </button>
+              </div>
+              <div class="gm-knobs">
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="ring-freq" width="96" height="96"></canvas><div class="gm-knob-label">Carrier</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="ring-lfo-rate" width="96" height="96"></canvas><div class="gm-knob-label">LFO Rate</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="ring-lfo-depth" width="96" height="96"></canvas><div class="gm-knob-label">LFO Depth</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="ring-mix" width="96" height="96"></canvas><div class="gm-knob-label">Mix</div><div class="gm-knob-value"></div></div>
+              </div>
+            </div>
+
+            <!-- Phaser MF-103 -->
+            <div class="gm-effect" id="gm-fx-phaser">
+              <div class="gm-effect-header">
+                <div>
+                  <div class="gm-effect-name">Phaser</div>
+                  <div class="gm-effect-model">MF-103</div>
+                </div>
+                <button class="gm-bypass" data-fx="phaser">
+                  <span class="gm-led on"></span>
+                  <span>ON</span>
+                </button>
+              </div>
+              <div class="gm-knobs">
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="phaser-rate" width="96" height="96"></canvas><div class="gm-knob-label">Rate</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="phaser-depth" width="96" height="96"></canvas><div class="gm-knob-label">Depth</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="phaser-feedback" width="96" height="96"></canvas><div class="gm-knob-label">Feedback</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="phaser-stages" width="96" height="96"></canvas><div class="gm-knob-label">Stages</div><div class="gm-knob-value"></div></div>
+              </div>
+            </div>
+
+            <!-- Delay MF-104 -->
+            <div class="gm-effect" id="gm-fx-delay">
+              <div class="gm-effect-header">
+                <div>
+                  <div class="gm-effect-name">Delay</div>
+                  <div class="gm-effect-model">MF-104</div>
+                </div>
+                <button class="gm-bypass" data-fx="delay">
+                  <span class="gm-led on"></span>
+                  <span>ON</span>
+                </button>
+              </div>
+              <div class="gm-knobs">
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="delay-time" width="96" height="96"></canvas><div class="gm-knob-label">Time</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="delay-feedback" width="96" height="96"></canvas><div class="gm-knob-label">Feedback</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="delay-mix" width="96" height="96"></canvas><div class="gm-knob-label">Mix</div><div class="gm-knob-value"></div></div>
+                <div class="gm-knob-group"><canvas class="gm-knob-canvas" data-knob="delay-lfo" width="96" height="96"></canvas><div class="gm-knob-label">LFO Rate</div><div class="gm-knob-value"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="gm-output-section">
+            <div class="gm-output-knobs">
+              <div class="gm-knob-group">
+                <canvas class="gm-knob-canvas" data-knob="output" width="96" height="96"></canvas>
+                <div class="gm-knob-label">Output</div>
+                <div class="gm-knob-value"></div>
+              </div>
+            </div>
+            <div class="gm-skin-selector">
+              <span class="gm-skin-label">Skin</span>
+              <button class="gm-skin-btn active" data-skin="gum" title="Bubblegum"></button>
+              <button class="gm-skin-btn" data-skin="og" title="OG Moog"></button>
+              <button class="gm-skin-btn" data-skin="midnight" title="Midnight"></button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -356,5 +467,8 @@
 
   <!-- Nullamp visualizer -->
   <script src="js/nullamp.js?v=17"></script>
+
+  <!-- Gum Modul effects pedal -->
+  <script src="js/gummodul.js"></script>
 </body>
 </html>

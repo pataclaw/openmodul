@@ -19,13 +19,13 @@ const Site = (() => {
       }
     },
     {
-      id: 'drumbyte',
-      name: 'Drumbyte',
-      category: 'INSTRUMENT',
-      accent: '#e05030',
-      ready: false,
+      id: 'gummodul',
+      name: 'Gum Modul',
+      category: 'EFFECTS',
+      accent: '#e8a0b8',
+      ready: true,
       labelGap: 0,
-      getPageBg: () => '#1a1614'
+      getPageBg: () => '#1a1018'
     },
     {
       id: 'nullamp',
@@ -97,6 +97,7 @@ const Site = (() => {
         requestAnimationFrame(() => {
           if (id === 'insomnichord' && typeof Strings !== 'undefined' && Strings.resize) Strings.resize();
           if (id === 'nullamp' && typeof Nullamp !== 'undefined' && Nullamp.resize) Nullamp.resize();
+          if (id === 'gummodul' && typeof GumModul !== 'undefined' && GumModul.resize) GumModul.resize();
           el.style.transition = '';
         });
       } else {
@@ -112,6 +113,7 @@ const Site = (() => {
           el.style.transition = '';
           if (id === 'insomnichord' && typeof Strings !== 'undefined' && Strings.resize) Strings.resize();
           if (id === 'nullamp' && typeof Nullamp !== 'undefined' && Nullamp.resize) Nullamp.resize();
+          if (id === 'gummodul' && typeof GumModul !== 'undefined' && GumModul.resize) GumModul.resize();
         }, 600);
       }
 

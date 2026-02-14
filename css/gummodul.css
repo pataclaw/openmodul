@@ -1,0 +1,449 @@
+/* gummodul.css — Moogerfooger-style effects pedal
+   Bubblegum pink. Knob-heavy. Analog warmth. */
+
+/* === SKIN VARIABLES === */
+.skin-gum {
+  --gm-bg: #e8a0b8;
+  --gm-panel: #d4708f;
+  --gm-panel-border: #c0607a;
+  --gm-knob: #2a2a2a;
+  --gm-knob-cap: #3a3a3a;
+  --gm-accent: #ff69b4;
+  --gm-led-on: #ff69b4;
+  --gm-led-off: #5a3040;
+  --gm-text: #3a1a28;
+  --gm-text-light: #6a3a50;
+  --gm-indicator: #ffffff;
+  --gm-input-bg: #c87898;
+  --gm-shadow: rgba(60, 20, 40, 0.3);
+}
+
+.skin-og {
+  --gm-bg: #e8dcc8;
+  --gm-panel: #d4c8b0;
+  --gm-panel-border: #b8a888;
+  --gm-knob: #1a1a1a;
+  --gm-knob-cap: #2a2a2a;
+  --gm-accent: #cc4400;
+  --gm-led-on: #cc4400;
+  --gm-led-off: #4a3820;
+  --gm-text: #2a2018;
+  --gm-text-light: #5a4838;
+  --gm-indicator: #ffffff;
+  --gm-input-bg: #c8b898;
+  --gm-shadow: rgba(40, 30, 10, 0.3);
+}
+
+.skin-midnight {
+  --gm-bg: #1a1a28;
+  --gm-panel: #22223a;
+  --gm-panel-border: #333358;
+  --gm-knob: #0a0a14;
+  --gm-knob-cap: #181828;
+  --gm-accent: #7b68ee;
+  --gm-led-on: #7b68ee;
+  --gm-led-off: #2a2a40;
+  --gm-text: #9090c0;
+  --gm-text-light: #606088;
+  --gm-indicator: #c0c0ff;
+  --gm-input-bg: #14141e;
+  --gm-shadow: rgba(0, 0, 20, 0.5);
+}
+
+/* === PEDAL BODY === */
+#gummodul-body {
+  background: var(--gm-bg);
+  border-radius: 18px;
+  padding: 14px 16px;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  color: var(--gm-text);
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.15),
+    inset 0 -2px 4px var(--gm-shadow),
+    0 4px 20px rgba(0,0,0,0.3),
+    0 1px 0 rgba(255,255,255,0.04) inset;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle texture overlay */
+#gummodul-body::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,0.015) 3px,
+    rgba(0,0,0,0.015) 4px
+  );
+  pointer-events: none;
+  border-radius: 12px;
+}
+
+/* === BRAND STRIP === */
+.gm-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.gm-brand-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gm-text);
+}
+
+.gm-brand-sub {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gm-text-light);
+}
+
+/* === INPUT SECTION === */
+.gm-input-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--gm-panel);
+  border-radius: 8px;
+  border: 1px solid var(--gm-panel-border);
+  flex-wrap: wrap;
+}
+
+.gm-dropzone {
+  flex: 1;
+  min-width: 120px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--gm-input-bg);
+  border: 2px dashed var(--gm-panel-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  padding: 4px 10px;
+}
+
+.gm-dropzone:hover,
+.gm-dropzone.drag-over {
+  border-color: var(--gm-accent);
+  background: rgba(255,255,255,0.05);
+}
+
+.gm-dropzone .drop-icon {
+  font-size: 18px;
+  opacity: 0.6;
+}
+
+.gm-dropzone .drop-text {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gm-text-light);
+}
+
+.gm-dropzone.has-file .drop-text {
+  color: var(--gm-text);
+}
+
+.gm-source-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gm-source-btn {
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: var(--gm-knob);
+  color: var(--gm-indicator);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.gm-source-btn:hover {
+  background: var(--gm-knob-cap);
+}
+
+.gm-source-btn.active {
+  background: var(--gm-accent);
+  color: #fff;
+}
+
+.gm-playback-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.gm-play-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: var(--gm-knob);
+  color: var(--gm-indicator);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.gm-play-btn:hover {
+  background: var(--gm-knob-cap);
+}
+
+.gm-play-btn.active {
+  background: var(--gm-accent);
+  color: #fff;
+}
+
+/* === EFFECTS GRID (2×2 stompbox layout) === */
+.gm-effects-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+/* === EFFECT PANEL === */
+.gm-effect {
+  background: var(--gm-panel);
+  border-radius: 8px;
+  border: 1px solid var(--gm-panel-border);
+  padding: 8px 6px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.gm-effect-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.gm-effect-name {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gm-text);
+}
+
+.gm-effect-model {
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: var(--gm-text-light);
+}
+
+/* Bypass button + LED */
+.gm-bypass {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: none;
+  border: 1px solid var(--gm-panel-border);
+  font-family: inherit;
+  font-size: 7px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gm-text-light);
+  transition: border-color 0.15s;
+}
+
+.gm-bypass:hover {
+  border-color: var(--gm-accent);
+}
+
+.gm-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gm-led-off);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.gm-led.on {
+  background: var(--gm-led-on);
+  box-shadow: 0 0 8px var(--gm-led-on), 0 0 3px var(--gm-led-on);
+}
+
+/* Knob grid */
+.gm-knobs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px;
+  flex: 1;
+}
+
+.gm-knob-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.gm-knob-canvas {
+  width: 42px;
+  height: 42px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.gm-knob-canvas:active {
+  cursor: grabbing;
+}
+
+.gm-knob-label {
+  font-size: 7px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gm-text-light);
+  text-align: center;
+  max-width: 56px;
+  line-height: 1.2;
+}
+
+.gm-knob-value {
+  font-size: 8px;
+  color: var(--gm-text);
+  text-align: center;
+  min-height: 10px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.gm-knob-group:hover .gm-knob-value,
+.gm-knob-group.dragging .gm-knob-value {
+  opacity: 1;
+}
+
+/* === OUTPUT SECTION === */
+.gm-output-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--gm-panel);
+  border-radius: 8px;
+  border: 1px solid var(--gm-panel-border);
+}
+
+.gm-output-knobs {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.gm-skin-selector {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.gm-skin-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+
+.gm-skin-btn:hover {
+  transform: scale(1.15);
+}
+
+.gm-skin-btn.active {
+  border-color: var(--gm-text);
+}
+
+.gm-skin-btn[data-skin="gum"] { background: #e8a0b8; }
+.gm-skin-btn[data-skin="og"] { background: #e8dcc8; }
+.gm-skin-btn[data-skin="midnight"] { background: #1a1a28; }
+
+.gm-skin-label {
+  font-size: 7px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gm-text-light);
+  margin-right: 4px;
+}
+
+/* === FILE INPUT (hidden) === */
+#gummodul-file {
+  display: none;
+}
+
+/* === MOBILE RESPONSIVE === */
+@media (max-width: 768px) {
+  #gummodul-body {
+    padding: 10px 10px;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .gm-effects-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .gm-knob-canvas {
+    width: 40px;
+    height: 40px;
+  }
+
+  .gm-input-section {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .gm-dropzone {
+    min-height: 40px;
+    width: 100%;
+  }
+
+  .gm-source-btns {
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .gm-output-section {
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .gm-brand-name {
+    font-size: 11px;
+    letter-spacing: 3px;
+  }
+}
