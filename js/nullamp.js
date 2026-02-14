@@ -138,6 +138,26 @@ const Nullamp = (() => {
   let songSplaySpeed = 0.03;  // gaussian splay rotation speed (0.01-0.06)
   let songCutStyle = 0.5;     // hard cuts (1.0) vs crossfades (0.0) bias
 
+  // === BRIDGE DETECTION STATE ===
+  let energyHistory = [];
+  const ENERGY_WINDOW = 180;
+  let bridgeAmount = 0;
+  let latticeAnchors = [];
+
+  const BRIDGE_ERRORS = [
+    'ERR_BRIDGE_DETECTED', 'SIGNAL::LOST', '>>> BREAKDOWN <<<',
+    'BPM_DRIFT: NaN', 'CARRIER_FADE 0x00', 'SYNC_LOST ///',
+    'FREQ_COLLAPSE', '!!BRIDGE!!', 'DATA_VOID', 'NULL_SIGNAL',
+    '---BREAK---', 'DROPOUT@', 'PHASE::SHIFT', 'dB=-Inf',
+    '0000000000', 'SILENCE_ERR', 'BEAT_NOT_FOUND', 'RX:TIMEOUT',
+  ];
+  const LATTICE_MSGS = [
+    'ANALYZING', 'SCANNING FREQ', 'DECODE', 'MAPPING',
+    'TRACE SIGNAL', 'LOCK ON', 'SAMPLING', 'READING',
+    'PARSE WAVE', 'INTERCEPT', 'ISOLATE', 'EXTRACT',
+    'DEMOD', 'FFT RUNNING', 'QUANTIZE', 'RESOLVE',
+  ];
+
   // Pexels video state
   let pexelsVideoPool = [];   // Pool of {url, width, height} fetched from Pexels
   let pexelsFetching = false;  // Lock to prevent duplicate fetches
@@ -1261,8 +1281,6 @@ const Nullamp = (() => {
     const waveX = (w - waveW) / 2;
     const points = 300;
 
-
-    // 5 frequency-band-mapped wave layers
     const bands = [
       { freqStart: 0, freqEnd: 10, amp: 0.3, speed: 1.0, thickness: 1.5 },
       { freqStart: 10, freqEnd: 40, amp: 0.22, speed: 0.7, thickness: 1.2 },
@@ -1271,7 +1289,6 @@ const Nullamp = (() => {
       { freqStart: 200, freqEnd: 400, amp: 0.06, speed: 2.5, thickness: 0.6 },
     ];
 
-    // Collect wave points for error text placement (use band 0 — the loudest)
     let wavePoints = [];
 
     for (let bi = 0; bi < bands.length; bi++) {
@@ -1302,15 +1319,14 @@ const Nullamp = (() => {
           if (bi === 0 && pass === 2) wavePoints.push({ x, y });
         }
 
-        // Draw with quadratic curves through midpoints for smoothness
+        // Smooth quadratic curves through midpoints
         ctx.moveTo(pts[0].x, pts[0].y);
         for (let i = 1; i < pts.length - 1; i++) {
           const mx = (pts[i].x + pts[i + 1].x) / 2;
           const my = (pts[i].y + pts[i + 1].y) / 2;
           ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
         }
-        const last = pts[pts.length - 1];
-        ctx.lineTo(last.x, last.y);
+        ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
 
         const color = scheme.wave(t_norm, frame);
 
@@ -1339,43 +1355,19 @@ const Nullamp = (() => {
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
 
-    // --- Error codes along the waveform during bridges ---
+    // Bridge overlays — error text + lattice (no spin, ever)
     if (bridgeAmount > 0.15 && wavePoints.length > 10) {
       drawWaveErrors(wavePoints, scheme, frame, beat);
     }
-
-    // --- BPM + subdivision indicator (subtle, top-left during bridges) ---
-    if (bridgeAmount > 0.2 && estimatedBPM > 0) {
-      const subLabel = ['1/4', '1/8', '1/16'][subdivision] || '1/4';
-      const bpmText = `${Math.round(estimatedBPM)} BPM :: ${subLabel}`;
-      ctx.save();
-      ctx.font = '10px monospace';
-      ctx.globalAlpha = bridgeAmount * 0.4;
-      ctx.fillStyle = scheme.primary;
-      // Glitchy position jitter
-      const jx = Math.random() * bridgeAmount * 4;
-      const jy = Math.random() * bridgeAmount * 3;
-      ctx.fillText(bpmText, 12 + jx, 18 + jy);
-      // Ghost
-      ctx.globalAlpha = bridgeAmount * 0.15;
-      ctx.fillStyle = scheme.accent;
-      ctx.fillText(bpmText, 14 + jx, 19 + jy);
-      ctx.restore();
-    }
-
-    // --- ASCII lattice lines from wave to anchor points ---
     if (wavePoints.length > 10) {
       drawLattice(w, h, wavePoints, scheme, frame, beat);
     }
-
   }
 
   // === ERROR TEXT ALONG WAVEFORM ===
   function drawWaveErrors(wavePoints, scheme, frame, beat) {
     ctx.save();
     ctx.font = '9px monospace';
-
-    // Pick errors based on frame — cycle through them
     const numErrors = 2 + Math.floor(bridgeAmount * 5);
     const step = Math.floor(wavePoints.length / (numErrors + 1));
 
@@ -1384,63 +1376,37 @@ const Nullamp = (() => {
       const clamped = Math.max(0, Math.min(wavePoints.length - 2, idx));
       const pt = wavePoints[clamped];
       const ptNext = wavePoints[Math.min(clamped + 1, wavePoints.length - 1)];
-
-      // Angle along the wave
       const angle = Math.atan2(ptNext.y - pt.y, ptNext.x - pt.x);
 
-      // Pick error string — rotate through them, scramble on beats
       let errIdx = (Math.floor(frame * 0.05) + e * 3) % BRIDGE_ERRORS.length;
       if (beat > 0.4) errIdx = Math.floor(Math.random() * BRIDGE_ERRORS.length);
       let errText = BRIDGE_ERRORS[errIdx];
 
-      // Corrupt some chars on beat
       if (beat > 0.3) {
         const chars = errText.split('');
         for (let c = 0; c < chars.length; c++) {
-          if (Math.random() < beat * 0.3) {
-            chars[c] = String.fromCharCode(33 + Math.floor(Math.random() * 93));
-          }
+          if (Math.random() < beat * 0.3) chars[c] = String.fromCharCode(33 + Math.floor(Math.random() * 93));
         }
         errText = chars.join('');
       }
 
-      // Draw rotated along wave path
       ctx.save();
       ctx.translate(pt.x, pt.y);
       ctx.rotate(angle);
       ctx.globalAlpha = bridgeAmount * (0.4 + beat * 0.4);
       ctx.fillStyle = scheme.accent;
       ctx.fillText(errText, 0, -4);
-      // Ghost duplicate
       ctx.globalAlpha = bridgeAmount * 0.2;
       ctx.fillStyle = scheme.primary;
       ctx.fillText(errText, 2, -2);
       ctx.restore();
     }
-
-    // Subdivision tick marks along wave — flash at beat subdivisions
-    const subDiv = [1, 2, 4][subdivision] || 1;
-    const tickPhase = (beatPhase * subDiv) % 1;
-    if (tickPhase < 0.15) {
-      const tickAlpha = (1 - tickPhase / 0.15) * bridgeAmount * 0.6;
-      const tickIdx = Math.floor(wavePoints.length * beatPhase);
-      if (tickIdx >= 0 && tickIdx < wavePoints.length) {
-        const tp = wavePoints[tickIdx];
-        ctx.beginPath();
-        ctx.arc(tp.x, tp.y, 3 + beat * 4, 0, Math.PI * 2);
-        ctx.fillStyle = scheme.accent;
-        ctx.globalAlpha = tickAlpha;
-        ctx.fill();
-      }
-    }
-
     ctx.restore();
   }
 
-  // === ASCII LATTICE — lines from wave to anchor points with crawling text ===
+  // === ASCII LATTICE — lines from wave to anchor points with analysis text ===
   function drawLattice(w, h, wavePoints, scheme, frame, beat) {
     if (bridgeAmount < 0.1) {
-      // Decay anchors when not in bridge
       latticeAnchors = latticeAnchors.filter(a => { a.life -= 0.02; return a.life > 0; });
       if (latticeAnchors.length === 0) return;
     }
@@ -1449,23 +1415,18 @@ const Nullamp = (() => {
     if (bridgeAmount > 0.2 && latticeAnchors.length < 8 && Math.random() < bridgeAmount * 0.08) {
       const waveIdx = Math.floor(Math.random() * wavePoints.length);
       const wp = wavePoints[waveIdx];
-      // Anchor point — offset from wave point into empty space
-      const angle = (Math.random() - 0.5) * Math.PI; // spread above and below
+      const angle = (Math.random() - 0.5) * Math.PI;
       const dist = 40 + Math.random() * 120;
       latticeAnchors.push({
         waveIdx,
         ax: wp.x + Math.cos(angle) * dist,
-        ay: wp.y + Math.sin(angle) * dist - 30, // bias upward
+        ay: wp.y + Math.sin(angle) * dist - 30,
         msg: LATTICE_MSGS[Math.floor(Math.random() * LATTICE_MSGS.length)],
-        life: 1,
-        dots: 0, // animated dots counter
-        progress: 0, // 0-1 crawl progress along the line
-        charOffset: 0,
+        life: 1, dots: 0, progress: 0, charOffset: 0,
       });
     }
 
     ctx.save();
-
     for (const anchor of latticeAnchors) {
       const wIdx = Math.min(anchor.waveIdx, wavePoints.length - 1);
       const wp = wavePoints[wIdx];
@@ -1475,14 +1436,13 @@ const Nullamp = (() => {
       anchor.progress = Math.min(1, anchor.progress + 0.015);
       anchor.charOffset += 0.3;
 
-      const alpha = anchor.life * bridgeAmount;
+      const alpha = anchor.life * Math.max(bridgeAmount, 0.1);
       const px = wp.x + (anchor.ax - wp.x) * anchor.progress;
       const py = wp.y + (anchor.ay - wp.y) * anchor.progress;
 
-      // --- Lattice line ---
+      // Dashed lattice line
       ctx.beginPath();
       ctx.moveTo(wp.x, wp.y);
-      // Midpoint bend for non-straight lattice
       const mx = (wp.x + px) / 2 + Math.sin(frame * 0.03 + anchor.waveIdx) * 10;
       const my = (wp.y + py) / 2 - 8;
       ctx.quadraticCurveTo(mx, my, px, py);
@@ -1493,14 +1453,13 @@ const Nullamp = (() => {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // --- Anchor dot ---
+      // Anchor dot + crosshair
       ctx.beginPath();
       ctx.arc(px, py, 2 + beat * 2, 0, Math.PI * 2);
       ctx.fillStyle = scheme.accent;
       ctx.globalAlpha = alpha * 0.7;
       ctx.fill();
 
-      // --- Small crosshair at anchor ---
       ctx.beginPath();
       ctx.moveTo(px - 5, py); ctx.lineTo(px + 5, py);
       ctx.moveTo(px, py - 5); ctx.lineTo(px, py + 5);
@@ -1509,36 +1468,30 @@ const Nullamp = (() => {
       ctx.globalAlpha = alpha * 0.4;
       ctx.stroke();
 
-      // --- Wave attachment dot ---
+      // Wave attachment dot
       ctx.beginPath();
       ctx.arc(wp.x, wp.y, 2, 0, Math.PI * 2);
       ctx.fillStyle = scheme.accent;
       ctx.globalAlpha = alpha * 0.6;
       ctx.fill();
 
-      // --- Message text at anchor ---
+      // Analysis text
       if (anchor.progress > 0.5) {
         const textAlpha = (anchor.progress - 0.5) * 2 * alpha;
         const dotsStr = '.'.repeat(Math.floor(anchor.dots));
         let msg = anchor.msg + dotsStr;
-
-        // Corrupt chars on beat
         if (beat > 0.4) {
           const chars = msg.split('');
           for (let c = 0; c < chars.length; c++) {
-            if (Math.random() < beat * 0.2) {
-              chars[c] = String.fromCharCode(33 + Math.floor(Math.random() * 93));
-            }
+            if (Math.random() < beat * 0.2) chars[c] = String.fromCharCode(33 + Math.floor(Math.random() * 93));
           }
           msg = chars.join('');
         }
-
         ctx.font = '8px monospace';
         ctx.globalAlpha = textAlpha * 0.8;
         ctx.fillStyle = scheme.accent;
         ctx.fillText(msg, px + 6, py - 3);
 
-        // Readout line — fake data scrolling below
         if (anchor.progress > 0.8) {
           ctx.globalAlpha = textAlpha * 0.4;
           ctx.fillStyle = scheme.primary;
@@ -1550,12 +1503,10 @@ const Nullamp = (() => {
       }
     }
 
-    // Decay life
     for (const anchor of latticeAnchors) {
       if (bridgeAmount < 0.15) anchor.life -= 0.01;
     }
     latticeAnchors = latticeAnchors.filter(a => a.life > 0);
-
     ctx.restore();
   }
 
@@ -1718,33 +1669,7 @@ const Nullamp = (() => {
     if (el) el.classList.add('hidden');
   }
 
-  // === BEAT DETECTION + BPM + BRIDGE DETECTION ===
-  let beatTimes = [];           // timestamps of recent beat hits
-  let estimatedBPM = 0;        // current BPM estimate
-  let energyHistory = [];       // windowed RMS energy for bridge detection
-  const ENERGY_WINDOW = 180;    // ~3 seconds at 60fps
-  let bridgeAmount = 0;         // 0-1, smoothed bridge detector output
-  let bridgeSpin = 0;           // accumulated rotation angle during bridges
-  let lastBeatTime = 0;         // audio context time of last beat
-  let beatPhase = 0;            // 0-1 phase within current beat (for subdivisions)
-  let subdivision = 0;          // detected: 0=quarter, 1=eighth, 2=sixteenth feel
-
-  const BRIDGE_ERRORS = [
-    'ERR_BRIDGE_DETECTED', 'SIGNAL::LOST', '>>> BREAKDOWN <<<',
-    'BPM_DRIFT: NaN', 'CARRIER_FADE 0x00', 'SYNC_LOST ///',
-    'FREQ_COLLAPSE', '!!BRIDGE!!', 'DATA_VOID', 'NULL_SIGNAL',
-    '---BREAK---', 'DROPOUT@', 'PHASE::SHIFT', 'dB=-Inf',
-    '0000000000', 'SILENCE_ERR', 'BEAT_NOT_FOUND', 'RX:TIMEOUT',
-  ];
-
-  const LATTICE_MSGS = [
-    'ANALYZING', 'SCANNING FREQ', 'DECODE', 'MAPPING',
-    'TRACE SIGNAL', 'LOCK ON', 'SAMPLING', 'READING',
-    'PARSE WAVE', 'INTERCEPT', 'ISOLATE', 'EXTRACT',
-    'DEMOD', 'FFT RUNNING', 'QUANTIZE', 'RESOLVE',
-  ];
-  let latticeAnchors = []; // persistent anchor points that lattice lines connect to
-
+  // === BEAT DETECTION + BRIDGE DETECTION ===
   function detectBeat() {
     if (!freqArray) return 0;
     let sum = 0;
@@ -1752,41 +1677,9 @@ const Nullamp = (() => {
     const avg = sum / 10 / 255;
     smoothBeat = Math.max(avg, smoothBeat * 0.92);
 
-    // --- BPM tracking ---
-    const now = performance.now();
-    // Detect beat onset: rising edge above threshold
-    if (avg > 0.45 && now - lastBeatTime > 200) { // min 200ms between beats (300 BPM cap)
-      if (lastBeatTime > 0) {
-        beatTimes.push(now - lastBeatTime); // interval in ms
-        if (beatTimes.length > 16) beatTimes.shift();
-        // Median interval → BPM
-        const sorted = [...beatTimes].sort((a, b) => a - b);
-        const median = sorted[Math.floor(sorted.length / 2)];
-        if (median > 0) estimatedBPM = 60000 / median;
-      }
-      lastBeatTime = now;
-    }
-
-    // Beat phase — how far through the current beat we are (for subdivision)
-    if (estimatedBPM > 0 && lastBeatTime > 0) {
-      const beatMs = 60000 / estimatedBPM;
-      beatPhase = ((now - lastBeatTime) % beatMs) / beatMs;
-      // Detect subdivision feel from beat intervals
-      if (beatTimes.length > 4) {
-        const avgInterval = beatTimes.reduce((a, b) => a + b, 0) / beatTimes.length;
-        const halfBeat = 60000 / estimatedBPM / 2;
-        // If many intervals are close to half a beat, we're feeling 8ths
-        const eighthCount = beatTimes.filter(t => Math.abs(t - halfBeat) < halfBeat * 0.3).length;
-        const sixteenthCount = beatTimes.filter(t => Math.abs(t - halfBeat / 2) < halfBeat * 0.25).length;
-        if (sixteenthCount > beatTimes.length * 0.3) subdivision = 2;
-        else if (eighthCount > beatTimes.length * 0.3) subdivision = 1;
-        else subdivision = 0;
-      }
-    }
-
-    // --- Bridge detection (only when audio is loaded) ---
+    // Bridge detection — only when audio is playing
     if (!fileLoaded) { bridgeAmount = 0; return smoothBeat; }
-    // Full spectrum RMS energy
+
     let totalEnergy = 0;
     for (let i = 0; i < freqArray.length; i++) totalEnergy += freqArray[i] * freqArray[i];
     totalEnergy = Math.sqrt(totalEnergy / freqArray.length) / 255;
@@ -1795,18 +1688,14 @@ const Nullamp = (() => {
     if (energyHistory.length > ENERGY_WINDOW) energyHistory.shift();
 
     if (energyHistory.length > 30) {
-      // Compare recent energy (last 15 frames) to longer window average
       const longAvg = energyHistory.reduce((a, b) => a + b, 0) / energyHistory.length;
-      const recentSlice = energyHistory.slice(-15);
-      const recentAvg = recentSlice.reduce((a, b) => a + b, 0) / recentSlice.length;
-      // Bridge = recent energy significantly below average, OR bass drops out
+      const recentAvg = energyHistory.slice(-15).reduce((a, b) => a + b, 0) / 15;
       let bassNow = 0;
       for (let i = 0; i < 6; i++) bassNow += freqArray[i];
       bassNow /= (6 * 255);
       const energyDrop = Math.max(0, 1 - recentAvg / Math.max(0.01, longAvg));
       const bassDrop = bassNow < 0.15 ? 1 : 0;
       const bridgeRaw = Math.max(energyDrop * 1.5, bassDrop * 0.7);
-      // Smooth it — ramp in slowly, ramp out slowly
       bridgeAmount = bridgeAmount * 0.95 + Math.min(1, bridgeRaw) * 0.05;
     }
 
