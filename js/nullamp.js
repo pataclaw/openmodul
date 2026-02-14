@@ -641,8 +641,8 @@ const Nullamp = (() => {
     // Faster glitch tracking — follows beat more tightly
     glitchIntensity = glitchIntensity * 0.75 + beat * 0.25;
 
-    // Zoom pulse — punchier, bass-driven
-    const zoomTarget = 1.0 + bassEnergy * 0.08;
+    // Zoom pulse — punchier, bass-driven (base > 1.0 so wobble never exposes edges)
+    const zoomTarget = 1.06 + bassEnergy * 0.08;
     imageZoom = imageZoom * 0.85 + zoomTarget * 0.15;
 
     // Ensure current slot points to a loaded image
