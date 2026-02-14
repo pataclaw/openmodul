@@ -1261,30 +1261,6 @@ const Nullamp = (() => {
     const waveX = (w - waveW) / 2;
     const points = 300;
 
-    // --- Bridge spin: accumulate rotation during bridges ---
-    const spinSpeed = bridgeAmount * 0.04 * (1 + subdivision);
-    bridgeSpin += spinSpeed;
-    // Smoothly return to 0 when bridge ends (snap to nearest full rotation)
-    if (bridgeAmount < 0.1 && bridgeSpin > 0.01) {
-      const target = Math.round(bridgeSpin / (Math.PI * 2)) * Math.PI * 2;
-      bridgeSpin += (target - bridgeSpin) * 0.06;
-      if (Math.abs(bridgeSpin - target) < 0.01) bridgeSpin = 0;
-    }
-
-    // Apply 3D perspective spin — Y-axis rotation faked with scale + skew
-    if (bridgeSpin > 0.01) {
-      ctx.save();
-      ctx.translate(cx, cy);
-      // Z-rotation (spin)
-      ctx.rotate(bridgeSpin);
-      // Fake Y-axis tilt — compress horizontally based on sin of spin angle
-      const yTilt = Math.cos(bridgeSpin * 0.7);
-      const zDepth = Math.sin(bridgeSpin * 0.7);
-      ctx.scale(Math.abs(yTilt) * 0.6 + 0.4, 1);
-      // Slight skew for perspective illusion
-      ctx.transform(1, zDepth * 0.15, -zDepth * 0.1, 1, 0, 0);
-      ctx.translate(-cx, -cy);
-    }
 
     // 5 frequency-band-mapped wave layers
     const bands = [
@@ -1392,10 +1368,6 @@ const Nullamp = (() => {
       drawLattice(w, h, wavePoints, scheme, frame, beat);
     }
 
-    // Restore rotation
-    if (bridgeSpin > 0.01) {
-      ctx.restore();
-    }
   }
 
   // === ERROR TEXT ALONG WAVEFORM ===
