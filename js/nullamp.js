@@ -1271,11 +1271,18 @@ const Nullamp = (() => {
       if (Math.abs(bridgeSpin - target) < 0.01) bridgeSpin = 0;
     }
 
-    // Apply rotation transform for bridge spin
+    // Apply 3D perspective spin — Y-axis rotation faked with scale + skew
     if (bridgeSpin > 0.01) {
       ctx.save();
       ctx.translate(cx, cy);
+      // Z-rotation (spin)
       ctx.rotate(bridgeSpin);
+      // Fake Y-axis tilt — compress horizontally based on sin of spin angle
+      const yTilt = Math.cos(bridgeSpin * 0.7);
+      const zDepth = Math.sin(bridgeSpin * 0.7);
+      ctx.scale(Math.abs(yTilt) * 0.6 + 0.4, 1);
+      // Slight skew for perspective illusion
+      ctx.transform(1, zDepth * 0.15, -zDepth * 0.1, 1, 0, 0);
       ctx.translate(-cx, -cy);
     }
 
@@ -1368,6 +1375,11 @@ const Nullamp = (() => {
       ctx.restore();
     }
 
+    // --- ASCII lattice lines from wave to anchor points ---
+    if (wavePoints.length > 10) {
+      drawLattice(w, h, wavePoints, scheme, frame, beat);
+    }
+
     // Restore rotation
     if (bridgeSpin > 0.01) {
       ctx.restore();
@@ -1437,6 +1449,128 @@ const Nullamp = (() => {
         ctx.fill();
       }
     }
+
+    ctx.restore();
+  }
+
+  // === ASCII LATTICE — lines from wave to anchor points with crawling text ===
+  function drawLattice(w, h, wavePoints, scheme, frame, beat) {
+    if (bridgeAmount < 0.1) {
+      // Decay anchors when not in bridge
+      latticeAnchors = latticeAnchors.filter(a => { a.life -= 0.02; return a.life > 0; });
+      if (latticeAnchors.length === 0) return;
+    }
+
+    // Spawn new anchors during bridges
+    if (bridgeAmount > 0.2 && latticeAnchors.length < 8 && Math.random() < bridgeAmount * 0.08) {
+      const waveIdx = Math.floor(Math.random() * wavePoints.length);
+      const wp = wavePoints[waveIdx];
+      // Anchor point — offset from wave point into empty space
+      const angle = (Math.random() - 0.5) * Math.PI; // spread above and below
+      const dist = 40 + Math.random() * 120;
+      latticeAnchors.push({
+        waveIdx,
+        ax: wp.x + Math.cos(angle) * dist,
+        ay: wp.y + Math.sin(angle) * dist - 30, // bias upward
+        msg: LATTICE_MSGS[Math.floor(Math.random() * LATTICE_MSGS.length)],
+        life: 1,
+        dots: 0, // animated dots counter
+        progress: 0, // 0-1 crawl progress along the line
+        charOffset: 0,
+      });
+    }
+
+    ctx.save();
+
+    for (const anchor of latticeAnchors) {
+      const wIdx = Math.min(anchor.waveIdx, wavePoints.length - 1);
+      const wp = wavePoints[wIdx];
+      if (!wp) continue;
+
+      anchor.dots = (anchor.dots + 0.04) % 4;
+      anchor.progress = Math.min(1, anchor.progress + 0.015);
+      anchor.charOffset += 0.3;
+
+      const alpha = anchor.life * bridgeAmount;
+      const px = wp.x + (anchor.ax - wp.x) * anchor.progress;
+      const py = wp.y + (anchor.ay - wp.y) * anchor.progress;
+
+      // --- Lattice line ---
+      ctx.beginPath();
+      ctx.moveTo(wp.x, wp.y);
+      // Midpoint bend for non-straight lattice
+      const mx = (wp.x + px) / 2 + Math.sin(frame * 0.03 + anchor.waveIdx) * 10;
+      const my = (wp.y + py) / 2 - 8;
+      ctx.quadraticCurveTo(mx, my, px, py);
+      ctx.strokeStyle = scheme.primary;
+      ctx.lineWidth = 0.8;
+      ctx.globalAlpha = alpha * 0.5;
+      ctx.setLineDash([3, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // --- Anchor dot ---
+      ctx.beginPath();
+      ctx.arc(px, py, 2 + beat * 2, 0, Math.PI * 2);
+      ctx.fillStyle = scheme.accent;
+      ctx.globalAlpha = alpha * 0.7;
+      ctx.fill();
+
+      // --- Small crosshair at anchor ---
+      ctx.beginPath();
+      ctx.moveTo(px - 5, py); ctx.lineTo(px + 5, py);
+      ctx.moveTo(px, py - 5); ctx.lineTo(px, py + 5);
+      ctx.strokeStyle = scheme.accent;
+      ctx.lineWidth = 0.5;
+      ctx.globalAlpha = alpha * 0.4;
+      ctx.stroke();
+
+      // --- Wave attachment dot ---
+      ctx.beginPath();
+      ctx.arc(wp.x, wp.y, 2, 0, Math.PI * 2);
+      ctx.fillStyle = scheme.accent;
+      ctx.globalAlpha = alpha * 0.6;
+      ctx.fill();
+
+      // --- Message text at anchor ---
+      if (anchor.progress > 0.5) {
+        const textAlpha = (anchor.progress - 0.5) * 2 * alpha;
+        const dotsStr = '.'.repeat(Math.floor(anchor.dots));
+        let msg = anchor.msg + dotsStr;
+
+        // Corrupt chars on beat
+        if (beat > 0.4) {
+          const chars = msg.split('');
+          for (let c = 0; c < chars.length; c++) {
+            if (Math.random() < beat * 0.2) {
+              chars[c] = String.fromCharCode(33 + Math.floor(Math.random() * 93));
+            }
+          }
+          msg = chars.join('');
+        }
+
+        ctx.font = '8px monospace';
+        ctx.globalAlpha = textAlpha * 0.8;
+        ctx.fillStyle = scheme.accent;
+        ctx.fillText(msg, px + 6, py - 3);
+
+        // Readout line — fake data scrolling below
+        if (anchor.progress > 0.8) {
+          ctx.globalAlpha = textAlpha * 0.4;
+          ctx.fillStyle = scheme.primary;
+          const readout = Array.from({ length: 12 }, (_, i) =>
+            String.fromCharCode(33 + ((Math.floor(anchor.charOffset) + i * 7) % 93))
+          ).join('');
+          ctx.fillText(readout, px + 6, py + 6);
+        }
+      }
+    }
+
+    // Decay life
+    for (const anchor of latticeAnchors) {
+      if (bridgeAmount < 0.15) anchor.life -= 0.01;
+    }
+    latticeAnchors = latticeAnchors.filter(a => a.life > 0);
 
     ctx.restore();
   }
@@ -1618,6 +1752,14 @@ const Nullamp = (() => {
     '---BREAK---', 'DROPOUT@', 'PHASE::SHIFT', 'dB=-Inf',
     '0000000000', 'SILENCE_ERR', 'BEAT_NOT_FOUND', 'RX:TIMEOUT',
   ];
+
+  const LATTICE_MSGS = [
+    'ANALYZING', 'SCANNING FREQ', 'DECODE', 'MAPPING',
+    'TRACE SIGNAL', 'LOCK ON', 'SAMPLING', 'READING',
+    'PARSE WAVE', 'INTERCEPT', 'ISOLATE', 'EXTRACT',
+    'DEMOD', 'FFT RUNNING', 'QUANTIZE', 'RESOLVE',
+  ];
+  let latticeAnchors = []; // persistent anchor points that lattice lines connect to
 
   function detectBeat() {
     if (!freqArray) return 0;
