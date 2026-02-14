@@ -130,13 +130,22 @@ const Nullamp = (() => {
   let glitchCanvas = null;    // offscreen canvas for glitch processing
   let glitchCtx = null;
 
+  // === SEED-DERIVED PER-SONG CONSTANTS ===
+  let songWarpFreq = 0.02;    // VHS sine warp oscillation speed (0.01-0.04)
+  let songSliceScale = 1.0;   // corruption slice size multiplier (0.5-2.0)
+  let songRGBShiftDir = 0;    // 0=horizontal, 1=vertical, 2=diagonal
+  let songHueBase = 0;        // base hue offset for Fever Dream (0-360)
+  let songSplaySpeed = 0.03;  // gaussian splay rotation speed (0.01-0.06)
+  let songCutStyle = 0.5;     // hard cuts (1.0) vs crossfades (0.0) bias
+
   // Pexels video state
   let pexelsVideoPool = [];   // Pool of {url, width, height} fetched from Pexels
   let pexelsFetching = false;  // Lock to prevent duplicate fetches
   let pexelsQueryIdx = 0;     // Rotate through theme queries
   let pexelsPage = 1;         // Pagination
-  const BUFFER_SIZE = 8;      // Keep 8 images loaded at a time
-  const PREFETCH_AT = 3;      // Start fetching more when buffer drops to 3 ready
+  const BUFFER_SIZE = 12;     // Keep 12 media slots loaded at a time
+  const PREFETCH_AT = 6;      // Start fetching more when buffer drops to 6 ready
+  const POOL_REFILL_AT = 15;  // Fetch more Pexels URLs when pool drops below this
 
   // === SEEDED PRNG ===
   function mulberry32(seed) {
@@ -167,9 +176,8 @@ const Nullamp = (() => {
   // === MEDIA LOADING (rolling infinite buffer — images + Pexels videos) ===
 
   // Fetch a batch of video URLs from Pexels into the pool
-  async function fetchPexelsVideos() {
-    if (pexelsFetching || !PEXELS_API_KEY) return;
-    pexelsFetching = true;
+  async function fetchPexelsBatch() {
+    if (!PEXELS_API_KEY) return;
 
     const queries = THEME_QUERIES[currentTheme] || THEME_QUERIES[0];
     const query = queries[pexelsQueryIdx % queries.length];
@@ -177,13 +185,12 @@ const Nullamp = (() => {
 
     try {
       const res = await fetch(
-        `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=15&page=${pexelsPage}&orientation=landscape`,
+        `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=40&page=${pexelsPage}&orientation=landscape`,
         { headers: { 'Authorization': PEXELS_API_KEY } }
       );
       const json = await res.json();
 
       for (const vid of (json.videos || [])) {
-        // Pick smallest file >= 360p wide, prefer sd/hd
         const file = vid.video_files
           .filter(f => f.width >= 320 && f.width <= 720 && f.file_type === 'video/mp4')
           .sort((a, b) => a.width - b.width)[0]
@@ -196,14 +203,37 @@ const Nullamp = (() => {
     } catch (e) {
       console.warn('Nullamp: Pexels fetch failed', e);
     }
+  }
+
+  // Fetch multiple batches in parallel for fast pool fill
+  async function fetchPexelsVideos(batches) {
+    if (pexelsFetching || !PEXELS_API_KEY) return;
+    pexelsFetching = true;
+    const n = batches || 2;
+    const promises = [];
+    for (let i = 0; i < n; i++) {
+      promises.push(fetchPexelsBatch());
+    }
+    await Promise.all(promises);
     pexelsFetching = false;
   }
 
-  // Get a video URL from pool (fetches more if needed)
+  // Keep the pool topped up — called frequently, non-blocking
+  function maintainVideoPool() {
+    if (!PEXELS_API_KEY || pexelsFetching) return;
+    if (pexelsVideoPool.length < POOL_REFILL_AT) {
+      fetchPexelsVideos(2); // fire-and-forget, 2 parallel batches
+    }
+  }
+
+  // Get a video URL from pool
   function getVideoUrl() {
-    if (pexelsVideoPool.length > 0) return pexelsVideoPool.shift();
-    // Trigger async fetch for next time
-    fetchPexelsVideos();
+    if (pexelsVideoPool.length > 0) {
+      maintainVideoPool(); // top up in background
+      return pexelsVideoPool.shift();
+    }
+    // Pool empty — trigger refill for next time
+    maintainVideoPool();
     return null;
   }
 
@@ -312,10 +342,7 @@ const Nullamp = (() => {
     while (mediaImages.length < BUFFER_SIZE) {
       mediaImages.push(fetchOneMedia(imageCounter++));
     }
-    // Keep the Pexels pool stocked
-    if (PEXELS_API_KEY && pexelsVideoPool.length < 5 && !pexelsFetching) {
-      fetchPexelsVideos();
-    }
+    maintainVideoPool();
   }
 
   function advanceImage() {
@@ -342,20 +369,18 @@ const Nullamp = (() => {
     pexelsPage = 1;
     pexelsQueryIdx = 0;
 
-    // Pre-fetch a batch of Pexels video URLs before loading slots
     if (PEXELS_API_KEY) {
-      fetchPexelsVideos().then(() => {
-        // Now load the initial batch with videos available
-        for (let i = 0; i < BUFFER_SIZE; i++) {
+      // Fire 3 parallel batches (up to 120 video URLs) then fill buffer
+      fetchPexelsVideos(3).then(() => {
+        while (mediaImages.length < BUFFER_SIZE) {
           mediaImages.push(fetchOneMedia(imageCounter++));
         }
       });
-      // Also load 2 immediate images so there's something to show while videos load
-      for (let i = 0; i < 2; i++) {
+      // Immediate images to show while videos load
+      for (let i = 0; i < 3; i++) {
         mediaImages.push(fetchOneImage(imageCounter++));
       }
     } else {
-      // No Pexels key — all images
       for (let i = 0; i < BUFFER_SIZE; i++) {
         mediaImages.push(fetchOneImage(imageCounter++));
       }
@@ -484,10 +509,94 @@ const Nullamp = (() => {
     dstCtx.putImageData(imgData, 0, 0);
   }
 
+  // === GAUSSIAN SPLAY / 360 EFFECTS ===
+  function applyGaussianSplay(dstCtx, w, h, intensity, frame) {
+    // Spherical warp — pixels displaced radially from center, gaussian falloff
+    const imgData = dstCtx.getImageData(0, 0, w, h);
+    const copy = new Uint8ClampedArray(imgData.data);
+    const data = imgData.data;
+    const cx = w / 2;
+    const cy = h / 2;
+    const maxR = Math.sqrt(cx * cx + cy * cy);
+    const splayAmt = intensity * 25;
+    const rotation = frame * songSplaySpeed; // spin speed from song seed
+
+    for (let y = 0; y < h; y += 2) { // skip rows for perf
+      for (let x = 0; x < w; x += 2) { // skip cols for perf
+        const dx = x - cx;
+        const dy = y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const norm = dist / maxR; // 0 at center, 1 at corners
+
+        // Gaussian-weighted radial displacement — strongest at mid-radius
+        const gauss = Math.exp(-((norm - 0.5) * (norm - 0.5)) / 0.08);
+        const displaceR = splayAmt * gauss;
+
+        // Spiral: add rotational offset that increases with distance
+        const angle = Math.atan2(dy, dx) + rotation * (1 - norm) + displaceR * 0.01;
+        const newDist = dist + displaceR * Math.sin(frame * 0.05 + dist * 0.02);
+
+        const srcX = Math.floor(cx + Math.cos(angle) * newDist);
+        const srcY = Math.floor(cy + Math.sin(angle) * newDist);
+
+        if (srcX >= 0 && srcX < w && srcY >= 0 && srcY < h) {
+          const dIdx = (y * w + x) * 4;
+          const sIdx = (srcY * w + srcX) * 4;
+          // Write to 2x2 block for the skipped pixels
+          for (let py = 0; py < 2 && y + py < h; py++) {
+            for (let px = 0; px < 2 && x + px < w; px++) {
+              const di = ((y + py) * w + (x + px)) * 4;
+              data[di] = copy[sIdx];
+              data[di + 1] = copy[sIdx + 1];
+              data[di + 2] = copy[sIdx + 2];
+            }
+          }
+        }
+      }
+    }
+
+    // Radial blur — blend pixels along radial direction
+    if (intensity > 0.3) {
+      const blurCopy = new Uint8ClampedArray(data);
+      const blurSteps = 3;
+      const blurDist = intensity * 4;
+      for (let y = 0; y < h; y += 2) {
+        for (let x = 0; x < w; x += 2) {
+          const dx = x - cx;
+          const dy = y - cy;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 1) continue;
+          const dirX = dx / dist;
+          const dirY = dy / dist;
+          let r = 0, g = 0, b = 0;
+          for (let s = 0; s < blurSteps; s++) {
+            const sx = Math.floor(x + dirX * s * blurDist);
+            const sy = Math.floor(y + dirY * s * blurDist);
+            const si = (Math.max(0, Math.min(h - 1, sy)) * w + Math.max(0, Math.min(w - 1, sx))) * 4;
+            r += blurCopy[si]; g += blurCopy[si + 1]; b += blurCopy[si + 2];
+          }
+          const idx = (y * w + x) * 4;
+          data[idx] = Math.floor(r / blurSteps);
+          data[idx + 1] = Math.floor(g / blurSteps);
+          data[idx + 2] = Math.floor(b / blurSteps);
+          // Fill 2x2 block
+          for (let py = 0; py < 2 && y + py < h; py++) {
+            for (let px = 0; px < 2 && x + px < w; px++) {
+              const di = ((y + py) * w + (x + px)) * 4;
+              data[di] = data[idx]; data[di + 1] = data[idx + 1]; data[di + 2] = data[idx + 2];
+            }
+          }
+        }
+      }
+    }
+
+    dstCtx.putImageData(imgData, 0, 0);
+  }
+
   // === DATAMOSH STATE ===
   let moshCanvas = null;
   let moshCtx = null;
-  let prevFrameData = null;   // previous frame's ImageData for motion-based moshing
+  let prevFrameData = null;
 
   // === MEDIA LAYER ===
   function drawMediaLayer(w, h, beat, frame) {
@@ -522,7 +631,7 @@ const Nullamp = (() => {
         advanceImage(); // drop old, fetch new, shift slots
         imageFrameCount = 0;
         crossfade = 0;
-        staticFrames = 3;
+        // No static burst — let datamosh smear the transition
       }
     }
 
@@ -536,9 +645,11 @@ const Nullamp = (() => {
     // Prefetch more if buffer is getting thin
     const readyCount = mediaImages.filter(m => m.loaded).length;
     if (readyCount <= PREFETCH_AT) prefetchMedia();
+    // Always keep the video pool topped up (runs every frame, but no-ops if pool is full)
+    if (frame % 30 === 0) maintainVideoPool();
 
-    // Crossfade ramp
-    crossfade = Math.min(1, crossfade + 0.02);
+    // Crossfade ramp — slow and continuous for seamless morphing
+    crossfade = Math.min(1, crossfade + 0.008 + beat * 0.015);
 
     const current = mediaImages[currentSlot];
     if (!current || !current.loaded) return;
@@ -556,16 +667,6 @@ const Nullamp = (() => {
     moshCanvas.width = w;
     moshCanvas.height = h;
 
-    // Draw static burst between cuts
-    if (staticFrames > 0) {
-      staticFrames--;
-      drawStaticBurst(glitchCtx, w, h);
-      ctx.globalAlpha = theme.opacity;
-      ctx.drawImage(glitchCanvas, 0, 0);
-      ctx.globalAlpha = 1;
-      return;
-    }
-
     // Draw current image with beat-synced zoom + wobble
     const wobbleX = Math.sin(frame * 0.07) * beat * 8;
     const wobbleY = Math.cos(frame * 0.05) * beat * 5;
@@ -576,21 +677,26 @@ const Nullamp = (() => {
     glitchCtx.drawImage(current.canvas, 0, 0, w, h);
     glitchCtx.restore();
 
-    // Blend next image for crossfade (quiet sections)
+    // Always blend next image — continuous morph, beat accelerates the blend
     const next = mediaImages[nextSlot];
-    if (crossfade > 0 && crossfade < 1 && beat < 0.3 && next && next.loaded) {
-      glitchCtx.globalAlpha = 1 - crossfade;
+    if (next && next.loaded && crossfade < 1) {
+      glitchCtx.globalAlpha = crossfade * 0.6 + beat * 0.3;
+      glitchCtx.save();
+      glitchCtx.translate(w / 2 - wobbleX * 0.5, h / 2 - wobbleY * 0.5);
+      glitchCtx.scale(imageZoom * 0.98, imageZoom * 0.98);
+      glitchCtx.translate(-w / 2, -h / 2);
       glitchCtx.drawImage(next.canvas, 0, 0, w, h);
+      glitchCtx.restore();
       glitchCtx.globalAlpha = 1;
     }
 
-    // === DATAMOSH — smear pixels between frames on beat ===
-    if (beat > 0.25) {
+    // === DATAMOSH — smear pixels between frames, always active, beat-driven ===
+    {
       const currentFrameData = glitchCtx.getImageData(0, 0, w, h);
       if (prevFrameData && prevFrameData.width === w && prevFrameData.height === h) {
         const cur = currentFrameData.data;
         const prev = prevFrameData.data;
-        const moshAmt = beat * 0.6; // how much to smear
+        const moshAmt = 0.15 + beat * 0.7; // always some smear, beat pumps it up
         const blockSize = 8;
         // Motion-vector-style block displacement
         for (let by = 0; by < h; by += blockSize) {
@@ -604,19 +710,20 @@ const Nullamp = (() => {
               }
             }
             diff /= (blockSize * blockSize * 2);
-            // High-motion blocks: smear from previous frame
-            if (diff > 20 && Math.random() < moshAmt) {
-              const displaceX = Math.floor((Math.random() - 0.5) * beat * 20);
-              const displaceY = Math.floor((Math.random() - 0.5) * beat * 10);
+            // High-motion blocks: smear from previous frame — lower threshold so transitions mosh hard
+            if (diff > 10 && seededRng() < moshAmt) {
+              const displaceX = Math.floor((Math.random() - 0.5) * (10 + beat * 30));
+              const displaceY = Math.floor((Math.random() - 0.5) * (5 + beat * 20));
               for (let py = 0; py < blockSize && by + py < h; py++) {
                 for (let px = 0; px < blockSize && bx + px < w; px++) {
                   const dstIdx = ((by + py) * w + (bx + px)) * 4;
                   const srcY = Math.max(0, Math.min(h - 1, by + py + displaceY));
                   const srcX = Math.max(0, Math.min(w - 1, bx + px + displaceX));
                   const srcIdx = (srcY * w + srcX) * 4;
-                  cur[dstIdx] = prev[srcIdx];
-                  cur[dstIdx + 1] = prev[srcIdx + 1];
-                  cur[dstIdx + 2] = prev[srcIdx + 2];
+                  // Blend prev frame into current for smoother morph
+                  cur[dstIdx] = Math.floor(cur[dstIdx] * 0.3 + prev[srcIdx] * 0.7);
+                  cur[dstIdx + 1] = Math.floor(cur[dstIdx + 1] * 0.3 + prev[srcIdx + 1] * 0.7);
+                  cur[dstIdx + 2] = Math.floor(cur[dstIdx + 2] * 0.3 + prev[srcIdx + 2] * 0.7);
                 }
               }
             }
@@ -624,8 +731,6 @@ const Nullamp = (() => {
         }
         glitchCtx.putImageData(currentFrameData, 0, 0);
       }
-      prevFrameData = glitchCtx.getImageData(0, 0, w, h);
-    } else if (!prevFrameData || frame % 10 === 0) {
       prevFrameData = glitchCtx.getImageData(0, 0, w, h);
     }
 
@@ -651,6 +756,11 @@ const Nullamp = (() => {
 
     glitchCtx.putImageData(imgData, 0, 0);
 
+    // Gaussian splay — 360 radial warp on beats
+    if (beat > 0.25) {
+      applyGaussianSplay(glitchCtx, w, h, beat, frame);
+    }
+
     // Draw to main canvas
     ctx.globalAlpha = theme.opacity * (0.6 + beat * 0.4);
     ctx.drawImage(glitchCanvas, 0, 0);
@@ -665,7 +775,7 @@ const Nullamp = (() => {
     // Sine wave warp — whole image wobbles like a bad VHS tape
     const warpAmt = 3 + intensity * 12;
     for (let y = 0; y < h; y++) {
-      const offset = Math.floor(Math.sin(y * 0.02 + frame * 0.06) * warpAmt);
+      const offset = Math.floor(Math.sin(y * songWarpFreq + frame * songWarpFreq * 3) * warpAmt);
       for (let x = 0; x < w; x++) {
         const srcX = ((x - offset) % w + w) % w;
         const dIdx = (y * w + x) * 4;
@@ -692,7 +802,7 @@ const Nullamp = (() => {
       const meltAmt = Math.floor(intensity * 8);
       for (let y = h - 1; y >= meltAmt; y--) {
         for (let x = 0; x < w; x++) {
-          if (Math.random() < intensity * 0.3) {
+          if (seededRng() < intensity * 0.3) {
             const dIdx = (y * w + x) * 4;
             const sIdx = ((y - meltAmt) * w + x) * 4;
             data[dIdx] = meltCopy[sIdx];
@@ -725,7 +835,7 @@ const Nullamp = (() => {
       const tearCopy = new Uint8ClampedArray(data);
       for (let t = 0; t < numTears; t++) {
         const tearY = Math.floor(seededRng() * h);
-        const tearH = 3 + Math.floor(intensity * 20);
+        const tearH = Math.floor((3 + intensity * 20) * songSliceScale);
         const tearOffset = Math.floor((seededRng() - 0.5) * 50 * intensity);
         for (let y = tearY; y < Math.min(h, tearY + tearH); y++) {
           for (let x = 0; x < w; x++) {
@@ -771,15 +881,32 @@ const Nullamp = (() => {
   function applyChannelSurfEffects(data, w, h, intensity, frame) {
     const copy = new Uint8ClampedArray(data);
 
-    // RGB split — big offset on beats, different per-row for chaos
+    // RGB split — direction derived from song seed
     for (let y = 0; y < h; y++) {
       const rowShift = Math.floor((3 + intensity * 15) * (1 + Math.sin(y * 0.1 + frame * 0.3) * 0.5));
       for (let x = 0; x < w; x++) {
         const idx = (y * w + x) * 4;
-        const rx = Math.min(w - 1, x + rowShift);
-        data[idx] = copy[(y * w + rx) * 4];
-        const bx = Math.max(0, x - rowShift);
-        data[idx + 2] = copy[(y * w + bx) * 4 + 2];
+        if (songRGBShiftDir === 0) {
+          // Horizontal split
+          const rx = Math.min(w - 1, x + rowShift);
+          data[idx] = copy[(y * w + rx) * 4];
+          const bx = Math.max(0, x - rowShift);
+          data[idx + 2] = copy[(y * w + bx) * 4 + 2];
+        } else if (songRGBShiftDir === 1) {
+          // Vertical split
+          const ry = Math.min(h - 1, y + rowShift);
+          data[idx] = copy[(ry * w + x) * 4];
+          const by = Math.max(0, y - rowShift);
+          data[idx + 2] = copy[(by * w + x) * 4 + 2];
+        } else {
+          // Diagonal split
+          const rx = Math.min(w - 1, x + rowShift);
+          const ry = Math.min(h - 1, y + Math.floor(rowShift * 0.5));
+          data[idx] = copy[(ry * w + rx) * 4];
+          const bx = Math.max(0, x - rowShift);
+          const by = Math.max(0, y - Math.floor(rowShift * 0.5));
+          data[idx + 2] = copy[(by * w + bx) * 4 + 2];
+        }
       }
     }
 
@@ -799,30 +926,30 @@ const Nullamp = (() => {
       }
     }
 
-    // Static bursts — random noise rectangles, more on beat
+    // Static bursts — noise rectangles, positions from seed, pixels truly random
     const numBursts = Math.floor(1 + intensity * 6);
     for (let b = 0; b < numBursts; b++) {
-      const bx = Math.floor(Math.random() * w);
-      const by = Math.floor(Math.random() * h);
-      const bw = 15 + Math.floor(Math.random() * 80);
-      const bh = 3 + Math.floor(Math.random() * 25);
+      const bx = Math.floor(seededRng() * w);
+      const by = Math.floor(seededRng() * h);
+      const bw = 15 + Math.floor(seededRng() * 80);
+      const bh = 3 + Math.floor(seededRng() * 25);
       for (let y = by; y < Math.min(h, by + bh); y++) {
         for (let x = bx; x < Math.min(w, bx + bw); x++) {
           const idx = (y * w + x) * 4;
-          const v = Math.random() > 0.5 ? 255 : 0;
+          const v = Math.random() > 0.5 ? 255 : 0; // per-pixel noise stays random
           data[idx] = data[idx + 1] = data[idx + 2] = v;
         }
       }
     }
 
-    // Hard horizontal cuts — swap blocks of rows
-    if (intensity > 0.35) {
+    // Hard horizontal cuts — swap blocks of rows (seeded positions)
+    if (intensity > 0.35 * songCutStyle + 0.15) {
       const cutCopy = new Uint8ClampedArray(data);
       const numCuts = 2 + Math.floor(intensity * 4);
       for (let c = 0; c < numCuts; c++) {
-        const y1 = Math.floor(Math.random() * h);
-        const y2 = Math.floor(Math.random() * h);
-        const cutH = 5 + Math.floor(Math.random() * 15);
+        const y1 = Math.floor(seededRng() * h);
+        const y2 = Math.floor(seededRng() * h);
+        const cutH = 5 + Math.floor(seededRng() * 15);
         for (let dy = 0; dy < cutH && y1 + dy < h && y2 + dy < h; dy++) {
           for (let x = 0; x < w; x++) {
             const d1 = ((y1 + dy) * w + x) * 4;
@@ -862,8 +989,8 @@ const Nullamp = (() => {
   }
 
   function applyCorruptedEffects(data, w, h, intensity, frame) {
-    // Slice displacement
-    const sliceH = 3 + Math.floor(seededRng() * 8);
+    // Slice displacement — size scaled by song fingerprint
+    const sliceH = Math.floor((3 + seededRng() * 8) * songSliceScale);
     const copy = new Uint8ClampedArray(data);
     for (let y = 0; y < h; y += sliceH) {
       if (seededRng() > 0.4 + (1 - intensity) * 0.4) {
@@ -968,16 +1095,18 @@ const Nullamp = (() => {
   function applyFeverDreamEffects(data, w, h, intensity, frame) {
     const copy = new Uint8ClampedArray(data);
 
-    // Chromatic aberration — bigger RGB offsets, diagonal, pulsing with beat
+    // Chromatic aberration — direction from song seed
     const shift = Math.floor(2 + intensity * 14);
+    const vertFactor = songRGBShiftDir === 0 ? 0 : songRGBShiftDir === 1 ? 1.0 : 0.5;
+    const horizFactor = songRGBShiftDir === 1 ? 0 : 1.0;
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const idx = (y * w + x) * 4;
-        const rx = Math.min(w - 1, x + shift);
-        const ry = Math.min(h - 1, y + Math.floor(shift * 0.5));
+        const rx = Math.min(w - 1, x + Math.floor(shift * horizFactor));
+        const ry = Math.min(h - 1, y + Math.floor(shift * vertFactor));
         data[idx] = copy[(ry * w + rx) * 4];
-        const bx = Math.max(0, x - shift);
-        const by = Math.max(0, y - Math.floor(shift * 0.5));
+        const bx = Math.max(0, x - Math.floor(shift * horizFactor));
+        const by = Math.max(0, y - Math.floor(shift * vertFactor));
         data[idx + 2] = copy[(by * w + bx) * 4 + 2];
       }
     }
@@ -1032,8 +1161,8 @@ const Nullamp = (() => {
       }
     }
 
-    // Hue rotation
-    const hueShift = (frame * 3 + intensity * 60) % 360;
+    // Hue rotation — base offset from song seed
+    const hueShift = (songHueBase + frame * 3 + intensity * 60) % 360;
     const rad = hueShift * Math.PI / 180;
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
@@ -1263,6 +1392,15 @@ const Nullamp = (() => {
       audioSeed = hashAudioBuffer(buffer);
       seededRng = mulberry32(audioSeed);
       currentTheme = audioSeed % 4;
+
+      // Derive per-song effect fingerprint from PRNG
+      songWarpFreq = 0.01 + seededRng() * 0.03;
+      songSliceScale = 0.5 + seededRng() * 1.5;
+      songRGBShiftDir = Math.floor(seededRng() * 3);
+      songHueBase = seededRng() * 360;
+      songSplaySpeed = 0.01 + seededRng() * 0.05;
+      songCutStyle = seededRng();
+
       loadMediaImages(audioSeed);
 
       playFromOffset(0);
@@ -1522,6 +1660,27 @@ const Nullamp = (() => {
     }
 
     if (playPauseBtn) playPauseBtn.addEventListener('click', togglePlayPause);
+
+    const resetBtn = document.getElementById('nullamp-reset');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        stopPlayback();
+        audioBuffer = null;
+        fileLoaded = false;
+        isPlaying = false;
+        pauseOffset = 0;
+        // Clean up media slots
+        for (const slot of mediaImages) cleanupSlot(slot);
+        mediaImages = [];
+        prevFrameData = null;
+        updateFileName('');
+        showDropZone();
+        if (fileInput) {
+          fileInput.value = '';
+          fileInput.click();
+        }
+      });
+    }
 
     if (fileInput) {
       fileInput.addEventListener('change', (e) => {
