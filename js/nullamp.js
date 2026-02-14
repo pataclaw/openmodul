@@ -79,13 +79,20 @@ const Nullamp = (() => {
   // Search queries per theme — curated for the vibe
   const THEME_QUERIES = [
     // VHS Purgatory
-    ['old television', 'vhs tape', 'vintage film', 'abandoned building', 'fog mist', 'static noise', 'old camera', 'grainy footage'],
+    ['old television', 'vhs tape', 'vintage film', 'abandoned building', 'fog mist', 'static noise', 'old camera', 'grainy footage',
+     'dark tunnel', 'surveillance camera', 'horror corridor', 'flickering light', 'creepy basement', 'dark forest night', 'abandoned hospital', 'security footage'],
     // Channel Surf
-    ['neon lights city', 'fast traffic night', 'tv static', 'glitch art', 'arcade game', 'retro computer', 'broadcast tower', 'cable tv'],
+    ['neon lights city', 'fast traffic night', 'tv static', 'glitch art', 'arcade game', 'retro computer', 'broadcast tower', 'cable tv',
+     'underground club', 'rave party lights', 'nightclub laser', 'dj turntable', 'concert crowd', 'strobe light dark', 'night driving', 'car race night',
+     'green neon light', 'red light dark', 'led lights room', 'street racing', 'motorcycle night', 'fast car driving', 'highway speed', 'tunnel driving'],
     // Corrupted Memory
-    ['digital art abstract', 'circuit board', 'data center', 'binary code', 'pixel art', 'broken screen', 'server room', 'technology grid'],
+    ['digital art abstract', 'circuit board', 'data center', 'binary code', 'pixel art', 'broken screen', 'server room', 'technology grid',
+     'electricity sparks', 'electric current', 'lightning bolt', 'green matrix code', 'hacker dark', 'fiber optic light', 'network cables', 'computer virus',
+     'robot face', 'artificial intelligence', 'dark web', 'digital glitch', 'power surge', 'electrical storm', 'plasma ball', 'digital rain'],
     // Fever Dream
-    ['psychedelic art', 'underwater ocean', 'aurora borealis', 'ink in water', 'kaleidoscope', 'lava lamp', 'colorful smoke', 'crystal prism'],
+    ['psychedelic art', 'underwater ocean', 'aurora borealis', 'ink in water', 'kaleidoscope', 'lava lamp', 'colorful smoke', 'crystal prism',
+     'rave underground', 'dark party lights', 'fog machine club', 'laser show', 'smoke red light', 'dance floor dark', 'warehouse party', 'techno club',
+     'fire flames dark', 'explosion slow motion', 'sparks flying', 'fireworks close', 'neon sign rain', 'cyberpunk city', 'red blue police lights', 'emergency lights'],
   ];
 
   // === MEDIA THEMES ===
