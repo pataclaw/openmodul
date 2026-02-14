@@ -1562,6 +1562,117 @@ const Nullamp = (() => {
       ctx.fillRect(0, 0, w, h);
       ctx.globalAlpha = 1;
     }
+
+    // === ASCII OVERLAY ===
+    drawAsciiOverlay(w, h, beat, frame, scheme);
+  }
+
+  // === ASCII OVERLAY ===
+  const ASCII_RAMP = ' .,:;+*?%S#@';
+  const GLITCH_WORDS = [
+    'NULL', 'VOID', 'ERR', 'SYNC', '/////', 'DATA', '0xFF',
+    'MOSH', 'LOST', 'SIGNAL', '>>>>', 'FEED', 'DEAD', 'LOOP',
+    '##', '???', 'NO CARRIER', 'OVERFLOW', 'BRK', '01101',
+    'CORRUPT', '---', 'ABORT', 'RETRY', 'FAIL', 'xoxo',
+  ];
+  let asciiDrops = []; // matrix-style falling characters
+
+  function drawAsciiOverlay(w, h, beat, frame, scheme) {
+    // 1. ASCII DITHER — sample canvas brightness, render characters
+    const cellW = 10;
+    const cellH = 14;
+    const cols = Math.floor(w / cellW);
+    const rows = Math.floor(h / cellH);
+    // Only render on beats or periodically (perf)
+    const asciiAlpha = beat * 0.35 + 0.05;
+    if (asciiAlpha < 0.08) return;
+
+    // Sample the current canvas for brightness
+    const sampleData = ctx.getImageData(0, 0, w, h).data;
+
+    ctx.save();
+    ctx.font = '10px monospace';
+    ctx.textBaseline = 'top';
+
+    // Sparse dither — skip cells randomly, more on quiet, fewer on beat
+    const density = 0.15 + beat * 0.35;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (Math.random() > density) continue;
+        const px = col * cellW + Math.floor(cellW / 2);
+        const py = row * cellH + Math.floor(cellH / 2);
+        const idx = (py * w + px) * 4;
+        const brightness = (sampleData[idx] + sampleData[idx + 1] + sampleData[idx + 2]) / 3;
+        const charIdx = Math.floor((brightness / 255) * (ASCII_RAMP.length - 1));
+        const ch = ASCII_RAMP[charIdx];
+        if (ch === ' ') continue;
+
+        // Color from scheme with slight variation
+        ctx.globalAlpha = asciiAlpha * (0.5 + brightness / 510);
+        ctx.fillStyle = (row + col + frame) % 7 === 0 ? scheme.accent : scheme.primary;
+        ctx.fillText(ch, col * cellW, row * cellH);
+      }
+    }
+
+    // 2. GLITCH TEXT FRAGMENTS — flash on hard beats
+    if (beat > 0.4) {
+      const numFrags = 1 + Math.floor(beat * 3);
+      ctx.font = '12px monospace';
+      for (let i = 0; i < numFrags; i++) {
+        const word = GLITCH_WORDS[Math.floor(Math.random() * GLITCH_WORDS.length)];
+        const gx = Math.floor(Math.random() * (w - 100));
+        const gy = Math.floor(Math.random() * h);
+        ctx.globalAlpha = 0.3 + beat * 0.5;
+        ctx.fillStyle = scheme.accent;
+        ctx.fillText(word, gx, gy);
+        // Ghost duplicate offset
+        if (beat > 0.6) {
+          ctx.globalAlpha = 0.15;
+          ctx.fillStyle = scheme.primary;
+          ctx.fillText(word, gx + 3, gy + 2);
+        }
+      }
+    }
+
+    // 3. MATRIX DROPS — sparse falling characters
+    // Spawn new drops on beats
+    if (beat > 0.3 && Math.random() < beat * 0.4) {
+      asciiDrops.push({
+        x: Math.floor(Math.random() * cols) * cellW,
+        y: -cellH,
+        speed: 1.5 + Math.random() * 3,
+        chars: Array.from({ length: 3 + Math.floor(Math.random() * 8) }, () =>
+          ASCII_RAMP[Math.floor(Math.random() * ASCII_RAMP.length)]
+        ),
+        life: 1,
+      });
+    }
+
+    ctx.font = '10px monospace';
+    for (let i = asciiDrops.length - 1; i >= 0; i--) {
+      const drop = asciiDrops[i];
+      drop.y += drop.speed;
+      drop.life -= 0.008;
+      if (drop.y > h + 50 || drop.life <= 0) {
+        asciiDrops.splice(i, 1);
+        continue;
+      }
+      for (let j = 0; j < drop.chars.length; j++) {
+        const cy = drop.y - j * cellH;
+        if (cy < -cellH || cy > h) continue;
+        const fade = (1 - j / drop.chars.length) * drop.life;
+        ctx.globalAlpha = fade * 0.5;
+        ctx.fillStyle = j === 0 ? scheme.accent : scheme.primary;
+        // Mutate trailing chars occasionally
+        if (Math.random() < 0.05) {
+          drop.chars[j] = ASCII_RAMP[Math.floor(Math.random() * ASCII_RAMP.length)];
+        }
+        ctx.fillText(drop.chars[j], drop.x, cy);
+      }
+    }
+    if (asciiDrops.length > 60) asciiDrops.splice(0, asciiDrops.length - 60);
+
+    ctx.restore();
   }
 
   // === POST-PROCESSING ===
