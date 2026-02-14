@@ -599,7 +599,7 @@ const Nullamp = (() => {
   let prevFrameData = null;
 
   // === MEDIA LAYER ===
-  function drawMediaLayer(w, h, beat, frame) {
+  function drawMediaLayer(w, h, beat, frame, freq, sens) {
     // Update video frames — draw current video frame to each video slot's canvas
     updateVideoFrames();
 
@@ -609,11 +609,23 @@ const Nullamp = (() => {
     const theme = THEMES[currentTheme];
     imageFrameCount++;
 
-    // Smooth glitch intensity from beat
-    glitchIntensity = glitchIntensity * 0.9 + beat * 0.1;
+    // Frequency band energies for reactive effects
+    let bassEnergy = 0, midEnergy = 0, highEnergy = 0;
+    if (freq) {
+      for (let i = 0; i < 8; i++) bassEnergy += freq[i];
+      bassEnergy = (bassEnergy / (8 * 255)) * (sens || 1);
+      for (let i = 20; i < 80; i++) midEnergy += freq[i];
+      midEnergy = (midEnergy / (60 * 255)) * (sens || 1);
+      for (let i = 100; i < 300; i++) highEnergy += freq[i];
+      highEnergy = (highEnergy / (200 * 255)) * (sens || 1);
+    }
 
-    // Zoom pulse decay
-    imageZoom = imageZoom * 0.92 + 1.0 * 0.08;
+    // Faster glitch tracking — follows beat more tightly
+    glitchIntensity = glitchIntensity * 0.75 + beat * 0.25;
+
+    // Zoom pulse — punchier, bass-driven
+    const zoomTarget = 1.0 + bassEnergy * 0.08;
+    imageZoom = imageZoom * 0.85 + zoomTarget * 0.15;
 
     // Ensure current slot points to a loaded image
     if (!mediaImages[currentSlot] || !mediaImages[currentSlot].loaded) {
@@ -626,7 +638,7 @@ const Nullamp = (() => {
     // Beat-triggered image switch
     if (beat > 0.5 && frame - lastBeatHit > 8) {
       lastBeatHit = frame;
-      imageZoom = 1.08 + beat * 0.06;
+      imageZoom = 1.12 + beat * 0.1;
       if (imageFrameCount > theme.imageHold * 0.3 || theme.imageHold < 30) {
         advanceImage(); // drop old, fetch new, shift slots
         imageFrameCount = 0;
@@ -667,9 +679,9 @@ const Nullamp = (() => {
     moshCanvas.width = w;
     moshCanvas.height = h;
 
-    // Draw current image with beat-synced zoom + wobble
-    const wobbleX = Math.sin(frame * 0.07) * beat * 8;
-    const wobbleY = Math.cos(frame * 0.05) * beat * 5;
+    // Draw current image with beat-synced zoom + wobble — bass drives X, mids drive Y
+    const wobbleX = Math.sin(frame * 0.07) * bassEnergy * 18 + Math.sin(frame * 0.13) * midEnergy * 6;
+    const wobbleY = Math.cos(frame * 0.05) * bassEnergy * 12 + Math.cos(frame * 0.11) * highEnergy * 4;
     glitchCtx.save();
     glitchCtx.translate(w / 2 + wobbleX, h / 2 + wobbleY);
     glitchCtx.scale(imageZoom, imageZoom);
@@ -696,7 +708,7 @@ const Nullamp = (() => {
       if (prevFrameData && prevFrameData.width === w && prevFrameData.height === h) {
         const cur = currentFrameData.data;
         const prev = prevFrameData.data;
-        const moshAmt = 0.25 + beat * 0.65;
+        const moshAmt = 0.2 + beat * 0.5 + bassEnergy * 0.3;
         const blockSize = 8;
         for (let by = 0; by < h; by += blockSize) {
           for (let bx = 0; bx < w; bx += blockSize) {
@@ -733,42 +745,43 @@ const Nullamp = (() => {
       prevFrameData = glitchCtx.getImageData(0, 0, w, h);
     }
 
-    // Apply theme-specific glitch effects
-    const gi = glitchIntensity;
+    // Apply theme-specific glitch effects — intensity boosted by frequency bands
+    const gi = Math.min(1, glitchIntensity + bassEnergy * 0.3);
     const imgData = glitchCtx.getImageData(0, 0, w, h);
     const d = imgData.data;
 
     switch (currentTheme) {
-      case 0: // VHS Purgatory
-        applyVHSEffects(d, w, h, gi, frame);
+      case 0: // VHS Purgatory — bass drives warp + melt
+        applyVHSEffects(d, w, h, Math.min(1, gi + bassEnergy * 0.2), frame);
         break;
-      case 1: // Channel Surf
-        applyChannelSurfEffects(d, w, h, gi, frame);
+      case 1: // Channel Surf — mids drive RGB + cuts
+        applyChannelSurfEffects(d, w, h, Math.min(1, gi + midEnergy * 0.25), frame);
         break;
-      case 2: // Corrupted Memory
-        applyCorruptedEffects(d, w, h, gi, frame);
+      case 2: // Corrupted Memory — bass drives slices
+        applyCorruptedEffects(d, w, h, Math.min(1, gi + bassEnergy * 0.2), frame);
         break;
-      case 3: // Fever Dream
-        applyFeverDreamEffects(d, w, h, gi, frame);
+      case 3: // Fever Dream — highs drive chromatic + hue
+        applyFeverDreamEffects(d, w, h, Math.min(1, gi + highEnergy * 0.3), frame);
         break;
     }
 
     glitchCtx.putImageData(imgData, 0, 0);
 
-    // Temporal feedback — blend previous composite into current for seamless morph
+    // Temporal feedback — persistence drops on beats so new content punches through
     feedbackCanvas.width = w;
     feedbackCanvas.height = h;
     if (prevFrameData && prevFrameData.width === w) {
       feedbackCtx.putImageData(prevFrameData, 0, 0);
-      // Heavy persistence: always keep 20-40% of previous frame (beat reduces it for responsiveness)
-      const persistence = 0.35 - beat * 0.15;
-      glitchCtx.globalAlpha = persistence;
-      glitchCtx.drawImage(feedbackCanvas, 0, 0);
-      glitchCtx.globalAlpha = 1;
+      const persistence = 0.3 - bassEnergy * 0.2;
+      if (persistence > 0.03) {
+        glitchCtx.globalAlpha = persistence;
+        glitchCtx.drawImage(feedbackCanvas, 0, 0);
+        glitchCtx.globalAlpha = 1;
+      }
     }
 
-    // Draw to main canvas
-    ctx.globalAlpha = theme.opacity * (0.6 + beat * 0.4);
+    // Draw to main canvas — opacity pumps harder with bass
+    ctx.globalAlpha = theme.opacity * (0.5 + bassEnergy * 0.5 + beat * 0.3);
     ctx.drawImage(glitchCanvas, 0, 0);
     ctx.globalAlpha = 1;
   }
@@ -1502,7 +1515,7 @@ const Nullamp = (() => {
     ctx.fillRect(0, 0, w, h);
 
     // === BACKGROUND LAYER: MEDIA IMAGES ===
-    drawMediaLayer(w, h, beat, frame);
+    drawMediaLayer(w, h, beat, frame, freq, sens);
 
     // === LAYER 1: RADAR GRID ===
     drawRadarGrid(w, h, beat, scheme, frame);
