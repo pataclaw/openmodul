@@ -10,6 +10,7 @@ const Site = (() => {
       category: 'INSTRUMENT',
       accent: '#c8a84e',
       ready: true,
+      labelGap: -30, // D-shape curves inward — pull label up
       getPageBg: () => {
         return getComputedStyle(document.documentElement).getPropertyValue('--page-bg').trim() || '#0a0a10';
       }
@@ -20,6 +21,7 @@ const Site = (() => {
       category: 'INSTRUMENT',
       accent: '#e05030',
       ready: false,
+      labelGap: 0,
       getPageBg: () => '#1a1614'
     },
     {
@@ -28,6 +30,7 @@ const Site = (() => {
       category: 'VISUALIZER',
       accent: '#40c040',
       ready: true,
+      labelGap: 0,
       getPageBg: () => '#fafaf8'
     }
   ];
@@ -252,12 +255,14 @@ const Site = (() => {
       const id = label.dataset.product;
       const pos = carouselPositions[id];
       const el = WindowManager.getEl(id);
-      if (!pos || !el) return;
+      const product = PRODUCTS.find(p => p.id === id);
+      if (!pos || !el || !product) return;
 
-      // Position below the scaled window
+      // Position below the scaled window (per-product offset for non-rectangular shapes)
       const visualHeight = el.offsetHeight * CAROUSEL_SCALE;
+      const gap = 20 + (product.labelGap || 0);
       label.style.left = pos.x + 'px';
-      label.style.top = (pos.y + visualHeight / 2 + 20) + 'px';
+      label.style.top = (pos.y + visualHeight / 2 + gap) + 'px';
     });
   }
 
