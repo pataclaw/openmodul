@@ -1311,6 +1311,8 @@ const Nullamp = (() => {
         ctx.beginPath();
         const yShift = (pass - 1) * 1.5;
 
+        // Pre-compute points for smooth quadratic interpolation
+        const pts = [];
         for (let i = 0; i <= points; i++) {
           const t = i / points;
           const x = waveX + t * waveW;
@@ -1320,30 +1322,40 @@ const Nullamp = (() => {
           const synthetic = Math.sin(t * Math.PI * (3 + bi * 2) + frame * 0.02 * band.speed) * energy;
           const combined = (sample * 0.4 + synthetic * 0.6) * band.amp;
           const y = cy + combined * h * env + yShift;
-          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-          // Store points from the main band for error text
+          pts.push({ x, y });
           if (bi === 0 && pass === 2) wavePoints.push({ x, y });
         }
+
+        // Draw with quadratic curves through midpoints for smoothness
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length - 1; i++) {
+          const mx = (pts[i].x + pts[i + 1].x) / 2;
+          const my = (pts[i].y + pts[i + 1].y) / 2;
+          ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+        }
+        const last = pts[pts.length - 1];
+        ctx.lineTo(last.x, last.y);
 
         const color = scheme.wave(t_norm, frame);
 
         if (pass === 0) {
           ctx.strokeStyle = color;
-          ctx.lineWidth = band.thickness * 4 + beat * 6;
+          ctx.lineWidth = band.thickness * 4 + beat * 8;
           ctx.shadowColor = color;
-          ctx.shadowBlur = 15 + beat * 20;
-          ctx.globalAlpha = 0.06 + energy * 0.08;
+          ctx.shadowBlur = 20 + beat * 25;
+          ctx.globalAlpha = 0.08 + energy * 0.1;
         } else if (pass === 1) {
           ctx.strokeStyle = color;
-          ctx.lineWidth = band.thickness * 2 + beat * 2;
+          ctx.lineWidth = band.thickness * 2.5 + beat * 3;
           ctx.shadowColor = scheme.accent;
-          ctx.shadowBlur = 6;
-          ctx.globalAlpha = 0.2 + energy * 0.2;
+          ctx.shadowBlur = 8;
+          ctx.globalAlpha = 0.25 + energy * 0.25;
         } else {
-          ctx.strokeStyle = scheme.accent;
-          ctx.lineWidth = band.thickness;
-          ctx.shadowBlur = 2;
-          ctx.globalAlpha = 0.5 + energy * 0.4;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = band.thickness + 0.5;
+          ctx.shadowColor = scheme.accent;
+          ctx.shadowBlur = 4;
+          ctx.globalAlpha = 0.6 + energy * 0.4;
         }
         ctx.stroke();
       }
