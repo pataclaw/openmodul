@@ -15,6 +15,15 @@
   <!-- Gum Modul effects pedal -->
   <link rel="stylesheet" href="css/gummodul.css">
 
+  <!-- Patchwerk modular synth -->
+  <link rel="stylesheet" href="css/patchwerk.css">
+
+  <!-- Gravity Harp -->
+  <link rel="stylesheet" href="css/gravityharp.css">
+
+  <!-- Spectral -->
+  <link rel="stylesheet" href="css/spectral.css">
+
   <!-- Insomnichord instrument -->
   <link rel="stylesheet" href="css/theme-engine.css">
   <link rel="stylesheet" href="css/base.css">
@@ -449,6 +458,127 @@
       </div>
     </div>
 
+    <!-- ========== PATCHWERK (chromeless — modular synth workspace) ========== -->
+    <div id="wm-patchwerk" class="wm-window wm-chromeless" style="--wm-accent: #8c6a3e;">
+      <div class="wm-content">
+        <div id="patchwerk-body" class="skin-circuit">
+          <div class="pw-toolbar">
+            <span class="pw-brand">Patchwerk</span>
+            <div class="pw-toolbar-group">
+              <select class="pw-preset-select" id="pw-preset">
+                <option value="">+ New Patch</option>
+                <option value="simple">Simple Tone</option>
+                <option value="bass">Bass</option>
+                <option value="lead">Sci-Fi Lead</option>
+                <option value="pad">Ambient Pad</option>
+              </select>
+            </div>
+            <button class="pw-add-btn" data-type="osc">+OSC</button>
+            <button class="pw-add-btn" data-type="lfo">+LFO</button>
+            <button class="pw-add-btn" data-type="flt">+FLT</button>
+            <button class="pw-add-btn" data-type="amp">+AMP</button>
+            <button class="pw-add-btn" data-type="dly">+DLY</button>
+            <div class="pw-toolbar-spacer"></div>
+            <div class="pw-skin-selector">
+              <span class="pw-skin-label">Skin</span>
+              <button class="pw-skin-btn active" data-skin="circuit" title="Moog (1970)"></button>
+              <button class="pw-skin-btn" data-skin="ember" title="Buchla (1975)"></button>
+              <button class="pw-skin-btn" data-skin="acid" title="Roland (1981)"></button>
+            </div>
+          </div>
+          <div class="pw-workspace">
+            <svg class="pw-cables" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== GRAVITY HARP (chromeless — void instrument) ========== -->
+    <div id="wm-gravityharp" class="wm-window wm-chromeless" style="--wm-accent: #b060ff;">
+      <div class="wm-content">
+        <div id="gravityharp-body" class="skin-void">
+          <div class="gh-toolbar">
+            <span class="gh-brand">Gravity Harp</span>
+            <div class="gh-toolbar-group">
+              <label class="gh-label">Strings</label>
+              <select id="gh-tuning">
+                <option value="pentatonic">Pentatonic</option>
+                <option value="chromatic">Chromatic</option>
+                <option value="whole">Whole Tone</option>
+                <option value="minor">Natural Minor</option>
+                <option value="major">Major</option>
+              </select>
+            </div>
+            <div class="gh-toolbar-group">
+              <label class="gh-label">Mass</label>
+              <input type="range" id="gh-mass" min="1" max="5" value="2" step="1">
+            </div>
+            <div class="gh-toolbar-group">
+              <label class="gh-label">Reverb</label>
+              <input type="range" id="gh-reverb" min="0" max="100" value="60">
+            </div>
+            <div class="gh-toolbar-group">
+              <label class="gh-label">Gravity</label>
+              <input type="range" id="gh-gravity" min="10" max="200" value="80">
+            </div>
+            <div class="gh-toolbar-spacer"></div>
+            <button class="gh-clear-btn" id="gh-clear" title="Clear particles">CLR</button>
+            <div class="gh-skin-selector">
+              <span class="gh-skin-label">Skin</span>
+              <button class="gh-skin-btn active" data-skin="void" title="Void"></button>
+              <button class="gh-skin-btn" data-skin="aurora" title="Aurora"></button>
+              <button class="gh-skin-btn" data-skin="ember" title="Ember"></button>
+            </div>
+          </div>
+          <div class="gh-stage">
+            <canvas id="gh-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SPECTRAL (chromeless — spectral freezer) ========== -->
+    <div id="wm-spectral" class="wm-window wm-chromeless" style="--wm-accent: #ff4080;">
+      <div class="wm-content">
+        <div id="spectral-body" class="skin-aurora">
+          <div class="sp-toolbar">
+            <span class="sp-brand">Spectral</span>
+            <div class="sp-toolbar-group">
+              <button class="sp-source-btn active" data-source="drone">DRONE</button>
+              <button class="sp-source-btn" data-source="mic">MIC</button>
+              <button class="sp-source-btn" data-source="file">FILE</button>
+              <input type="file" id="sp-file" accept="audio/*" class="sp-hidden">
+            </div>
+            <button class="sp-freeze-btn" id="sp-freeze">FREEZE</button>
+            <div class="sp-toolbar-group">
+              <label class="sp-label">Attack</label>
+              <input type="range" id="sp-attack" min="1" max="500" value="20">
+            </div>
+            <div class="sp-toolbar-group">
+              <label class="sp-label">Release</label>
+              <input type="range" id="sp-release" min="10" max="2000" value="400">
+            </div>
+            <div class="sp-toolbar-group">
+              <label class="sp-label">Reverb</label>
+              <input type="range" id="sp-reverb" min="0" max="100" value="50">
+            </div>
+            <div class="sp-toolbar-spacer"></div>
+            <div class="sp-skin-selector">
+              <span class="sp-skin-label">Skin</span>
+              <button class="sp-skin-btn active" data-skin="aurora" title="Aurora"></button>
+              <button class="sp-skin-btn" data-skin="solar" title="Solar"></button>
+              <button class="sp-skin-btn" data-skin="void" title="Void"></button>
+            </div>
+          </div>
+          <div class="sp-display">
+            <canvas id="sp-canvas"></canvas>
+            <div class="sp-freeze-label" id="sp-freeze-indicator">LIVE</div>
+          </div>
+          <div class="sp-keyboard" id="sp-keyboard"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Site scripts (load first — they set up the shell) -->
@@ -470,5 +600,14 @@
 
   <!-- Gum Modul effects pedal -->
   <script src="js/gummodul.js"></script>
+
+  <!-- Patchwerk modular synth -->
+  <script src="js/patchwerk.js"></script>
+
+  <!-- Gravity Harp -->
+  <script src="js/gravityharp.js"></script>
+
+  <!-- Spectral -->
+  <script src="js/spectral.js"></script>
 </body>
 </html>

@@ -253,6 +253,64 @@
   max-height: 94vh;
 }
 
+/* === PATCHWERK (chromeless — invisible window, full workspace) === */
+#wm-patchwerk {
+  width: 620px;
+}
+
+#wm-patchwerk.wm-open {
+  width: 96vw !important;
+  height: 94vh !important;
+  max-width: 96vw;
+  max-height: 94vh;
+}
+
+#wm-patchwerk .wm-content {
+  background: transparent !important;
+  overflow: visible;
+}
+
+.wm-chromeless.hover-glow #patchwerk-body .pw-module {
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 0 30px rgba(0,212,255,0.06);
+}
+
+/* === GRAVITY HARP (chromeless void instrument) === */
+#wm-gravityharp {
+  width: 660px;
+}
+
+#wm-gravityharp.wm-open {
+  max-height: 94vh;
+}
+
+.wm-chromeless.hover-glow #gravityharp-body {
+  box-shadow:
+    0 4px 20px rgba(0,0,0,0.5),
+    0 1px 0 rgba(255,255,255,0.04) inset,
+    0 -2px 8px rgba(0,0,0,0.3) inset,
+    0 0 40px rgba(176,96,255,0.12);
+}
+
+/* === SPECTRAL (chromeless spectral freezer) === */
+#wm-spectral {
+  width: 650px;
+}
+
+#wm-spectral.wm-open {
+  max-height: 94vh;
+}
+
+.wm-chromeless.hover-glow #spectral-body {
+  box-shadow:
+    0 4px 20px rgba(0,0,0,0.5),
+    0 1px 0 rgba(255,255,255,0.04) inset,
+    0 -2px 8px rgba(0,0,0,0.3) inset,
+    0 0 40px rgba(255,64,128,0.12);
+}
+
 #wm-nullamp {
   width: 700px;
 }
@@ -282,6 +340,18 @@
   }
 
   #wm-gummodul:not(.wm-open) {
+    width: 70vw;
+  }
+
+  #wm-patchwerk:not(.wm-open) {
+    width: 75vw;
+  }
+
+  #wm-gravityharp:not(.wm-open) {
+    width: 75vw;
+  }
+
+  #wm-spectral:not(.wm-open) {
     width: 70vw;
   }
 

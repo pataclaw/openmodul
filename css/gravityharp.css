@@ -1,0 +1,226 @@
+/* gravityharp.css — Gravity-driven string instrument
+   Dark void. Luminous strings. Falling particles. */
+
+/* === SKIN VARIABLES === */
+.skin-void {
+  --gh-bg: #08060e;
+  --gh-stage: #06040a;
+  --gh-accent: #b060ff;
+  --gh-string: rgba(176, 96, 255, 0.6);
+  --gh-string-glow: #b060ff;
+  --gh-particle: #e0c0ff;
+  --gh-text: #8070a0;
+  --gh-text-bright: #c0b0e0;
+  --gh-toolbar: #0a0810;
+  --gh-toolbar-border: #1a1528;
+  --gh-btn: #141020;
+  --gh-btn-hover: #1e1830;
+}
+
+.skin-aurora {
+  --gh-bg: #060a10;
+  --gh-stage: #040810;
+  --gh-accent: #40d8a0;
+  --gh-string: rgba(64, 216, 160, 0.6);
+  --gh-string-glow: #40d8a0;
+  --gh-particle: #a0ffe0;
+  --gh-text: #608090;
+  --gh-text-bright: #a0d0c0;
+  --gh-toolbar: #080c14;
+  --gh-toolbar-border: #142028;
+  --gh-btn: #0c1420;
+  --gh-btn-hover: #142030;
+}
+
+.skin-ember {
+  --gh-bg: #0e0806;
+  --gh-stage: #0a0604;
+  --gh-accent: #ff6840;
+  --gh-string: rgba(255, 104, 64, 0.6);
+  --gh-string-glow: #ff6840;
+  --gh-particle: #ffc0a0;
+  --gh-text: #a08070;
+  --gh-text-bright: #d0b0a0;
+  --gh-toolbar: #100a08;
+  --gh-toolbar-border: #281810;
+  --gh-btn: #1a1008;
+  --gh-btn-hover: #281810;
+}
+
+/* === BODY === */
+#gravityharp-body {
+  background: var(--gh-bg);
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  border-radius: 8px;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* === TOOLBAR === */
+.gh-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--gh-toolbar);
+  border-bottom: 1px solid var(--gh-toolbar-border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.gh-brand {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--gh-accent);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.gh-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gh-label {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--gh-text);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.gh-toolbar select {
+  background: var(--gh-btn);
+  color: var(--gh-text-bright);
+  border: 1px solid var(--gh-toolbar-border);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  outline: none;
+}
+
+.gh-toolbar select:focus {
+  border-color: var(--gh-accent);
+}
+
+.gh-toolbar input[type="range"] {
+  width: 60px;
+  height: 4px;
+  accent-color: var(--gh-accent);
+  cursor: pointer;
+}
+
+.gh-toolbar-spacer {
+  flex: 1;
+}
+
+.gh-clear-btn {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--gh-text);
+  background: var(--gh-btn);
+  border: 1px solid var(--gh-toolbar-border);
+  border-radius: 3px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.gh-clear-btn:hover {
+  background: var(--gh-btn-hover);
+  color: var(--gh-text-bright);
+}
+
+/* === SKIN SELECTOR === */
+.gh-skin-selector {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gh-skin-label {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--gh-text);
+  text-transform: uppercase;
+}
+
+.gh-skin-btn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.gh-skin-btn[data-skin="void"] { background: #b060ff; }
+.gh-skin-btn[data-skin="aurora"] { background: #40d8a0; }
+.gh-skin-btn[data-skin="ember"] { background: #ff6840; }
+
+.gh-skin-btn.active {
+  border-color: rgba(255,255,255,0.5);
+}
+
+.gh-skin-btn:hover {
+  border-color: rgba(255,255,255,0.3);
+}
+
+/* === STAGE (canvas area) === */
+.gh-stage {
+  flex: 1;
+  position: relative;
+  background: var(--gh-stage);
+  cursor: crosshair;
+  min-height: 460px;
+  overflow: hidden;
+}
+
+#gh-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* === MOBILE === */
+@media (max-width: 768px) {
+  .gh-toolbar {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .gh-brand {
+    font-size: 10px;
+  }
+
+  .gh-toolbar-group {
+    gap: 3px;
+  }
+
+  .gh-toolbar input[type="range"] {
+    width: 44px;
+  }
+
+  .gh-stage {
+    min-height: 300px;
+  }
+
+  .gh-skin-selector {
+    display: none;
+  }
+}

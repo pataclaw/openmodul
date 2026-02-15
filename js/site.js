@@ -35,6 +35,33 @@ const Site = (() => {
       ready: true,
       labelGap: 0,
       getPageBg: () => '#fafaf8'
+    },
+    {
+      id: 'patchwerk',
+      name: 'Patchwerk',
+      category: 'SYNTH',
+      accent: '#8c5a2e',
+      ready: true,
+      labelGap: 0,
+      getPageBg: () => '#2a2520'
+    },
+    {
+      id: 'gravityharp',
+      name: 'Gravity Harp',
+      category: 'INSTRUMENT',
+      accent: '#b060ff',
+      ready: true,
+      labelGap: 0,
+      getPageBg: () => '#08060e'
+    },
+    {
+      id: 'spectral',
+      name: 'Spectral',
+      category: 'INSTRUMENT',
+      accent: '#ff4080',
+      ready: true,
+      labelGap: 0,
+      getPageBg: () => '#060a10'
     }
   ];
 
@@ -98,6 +125,9 @@ const Site = (() => {
           if (id === 'insomnichord' && typeof Strings !== 'undefined' && Strings.resize) Strings.resize();
           if (id === 'nullamp' && typeof Nullamp !== 'undefined' && Nullamp.resize) Nullamp.resize();
           if (id === 'gummodul' && typeof GumModul !== 'undefined' && GumModul.resize) GumModul.resize();
+          if (id === 'patchwerk' && typeof Patchwerk !== 'undefined' && Patchwerk.resize) Patchwerk.resize();
+          if (id === 'gravityharp' && typeof GravityHarp !== 'undefined' && GravityHarp.resize) GravityHarp.resize();
+          if (id === 'spectral' && typeof Spectral !== 'undefined' && Spectral.resize) Spectral.resize();
           el.style.transition = '';
         });
       } else {
@@ -114,6 +144,9 @@ const Site = (() => {
           if (id === 'insomnichord' && typeof Strings !== 'undefined' && Strings.resize) Strings.resize();
           if (id === 'nullamp' && typeof Nullamp !== 'undefined' && Nullamp.resize) Nullamp.resize();
           if (id === 'gummodul' && typeof GumModul !== 'undefined' && GumModul.resize) GumModul.resize();
+          if (id === 'patchwerk' && typeof Patchwerk !== 'undefined' && Patchwerk.resize) Patchwerk.resize();
+          if (id === 'gravityharp' && typeof GravityHarp !== 'undefined' && GravityHarp.resize) GravityHarp.resize();
+          if (id === 'spectral' && typeof Spectral !== 'undefined' && Spectral.resize) Spectral.resize();
         }, 600);
       }
 
@@ -246,25 +279,40 @@ const Site = (() => {
   }
 
   function layoutCarouselDesktop() {
-    const count = PRODUCTS.length;
+    const cols = 3;
     const sampleEl = WindowManager.getEl(PRODUCTS[0].id);
     const itemWidth = (sampleEl?.offsetWidth || 1100) * CAROUSEL_SCALE;
-    const gap = 50;
-    const totalWidth = count * itemWidth + (count - 1) * gap;
-    const startX = (window.innerWidth - totalWidth) / 2 + itemWidth / 2;
-    const y = window.innerHeight * 0.43;
+    const gapX = 50;
+    const gapY = 100;
 
-    PRODUCTS.forEach((product, i) => {
-      const x = startX + i * (itemWidth + gap);
-      carouselPositions[product.id] = { x, y };
+    // Split into rows of 3
+    const rows = [];
+    for (let i = 0; i < PRODUCTS.length; i += cols) {
+      rows.push(PRODUCTS.slice(i, i + cols));
+    }
 
-      const el = WindowManager.getEl(product.id);
-      if (el && !WindowManager.isOpen(product.id)) {
-        el.style.left = x + 'px';
-        el.style.top = y + 'px';
-        el.style.transform = `translate(-50%, -50%) scale(${CAROUSEL_SCALE})`;
-        el.style.opacity = '1';
-      }
+    const totalRows = rows.length;
+    const rowHeight = 400;
+    const totalHeight = totalRows * rowHeight + (totalRows - 1) * gapY;
+    const startY = (window.innerHeight - totalHeight) / 2 + rowHeight * 0.45;
+
+    rows.forEach((row, rowIdx) => {
+      const rowWidth = row.length * itemWidth + (row.length - 1) * gapX;
+      const rowStartX = (window.innerWidth - rowWidth) / 2 + itemWidth / 2;
+      const y = startY + rowIdx * (rowHeight + gapY);
+
+      row.forEach((product, colIdx) => {
+        const x = rowStartX + colIdx * (itemWidth + gapX);
+        carouselPositions[product.id] = { x, y };
+
+        const el = WindowManager.getEl(product.id);
+        if (el && !WindowManager.isOpen(product.id)) {
+          el.style.left = x + 'px';
+          el.style.top = y + 'px';
+          el.style.transform = `translate(-50%, -50%) scale(${CAROUSEL_SCALE})`;
+          el.style.opacity = '1';
+        }
+      });
     });
   }
 

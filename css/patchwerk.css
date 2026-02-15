@@ -1,0 +1,598 @@
+/* patchwerk.css — Modular synth workspace
+   Retro warm plastic. Worn knobs. Patched cables. Vintage hardware. */
+
+/* === SKIN: MOOG (1970) — dark walnut + cream panels + orange/red cables === */
+.skin-circuit {
+  --pw-bg: transparent;
+  --pw-workspace: transparent;
+  --pw-module: #c8bea8;
+  --pw-module-secondary: #b8ae98;
+  --pw-module-border: #8a8070;
+  --pw-accent: #8c5a2e;
+  --pw-accent-bright: #b87a40;
+  --pw-jack-out: #c44a28;
+  --pw-jack-in: #4a4438;
+  --pw-cable: #c44a28;
+  --pw-text: #4a4438;
+  --pw-text-bright: #2a2620;
+  --pw-knob: #3a3630;
+  --pw-knob-cap: #4a4640;
+  --pw-indicator: #c8bea8;
+  --pw-toolbar: rgba(180, 170, 150, 0.88);
+  --pw-toolbar-border: #8a8070;
+  --pw-led-on: #c44a28;
+  --pw-led-off: #706858;
+  --pw-page-bg: #2a2520;
+  --pw-dot: rgba(0,0,0,0.05);
+}
+
+/* === SKIN: BUCHLA (1975) — warm tan + navy labels + blue/orange cables === */
+.skin-ember {
+  --pw-bg: transparent;
+  --pw-workspace: transparent;
+  --pw-module: #d4c4a0;
+  --pw-module-secondary: #c4b490;
+  --pw-module-border: #9a8a6e;
+  --pw-accent: #2a4a7c;
+  --pw-accent-bright: #3a6aac;
+  --pw-jack-out: #e07020;
+  --pw-jack-in: #5a5040;
+  --pw-cable: #e07020;
+  --pw-text: #3a3428;
+  --pw-text-bright: #1a1810;
+  --pw-knob: #2a4a7c;
+  --pw-knob-cap: #3a5a8c;
+  --pw-indicator: #d4c4a0;
+  --pw-toolbar: rgba(200, 185, 155, 0.88);
+  --pw-toolbar-border: #9a8a6e;
+  --pw-led-on: #e07020;
+  --pw-led-off: #7a6e58;
+  --pw-page-bg: #302820;
+  --pw-dot: rgba(0,0,0,0.04);
+}
+
+/* === SKIN: ROLAND (1981) — silver grey + green accents + red cables === */
+.skin-acid {
+  --pw-bg: transparent;
+  --pw-workspace: transparent;
+  --pw-module: #b0aea8;
+  --pw-module-secondary: #a09e98;
+  --pw-module-border: #787470;
+  --pw-accent: #2a6a40;
+  --pw-accent-bright: #3a8a50;
+  --pw-jack-out: #cc3030;
+  --pw-jack-in: #585450;
+  --pw-cable: #cc3030;
+  --pw-text: #38362e;
+  --pw-text-bright: #1c1a16;
+  --pw-knob: #484440;
+  --pw-knob-cap: #585450;
+  --pw-indicator: #b0aea8;
+  --pw-toolbar: rgba(170, 168, 162, 0.88);
+  --pw-toolbar-border: #787470;
+  --pw-led-on: #cc3030;
+  --pw-led-off: #686460;
+  --pw-page-bg: #262420;
+  --pw-dot: rgba(0,0,0,0.04);
+}
+
+/* === BODY — invisible, modules float free === */
+#patchwerk-body {
+  background: transparent;
+  border-radius: 0;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  color: var(--pw-text);
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: visible;
+  width: 100%;
+  height: 100%;
+  box-shadow: none;
+}
+
+/* === TOOLBAR — worn plastic floating bar === */
+.pw-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--pw-toolbar);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--pw-toolbar-border);
+  border-radius: 6px;
+  flex-shrink: 0;
+  min-height: 36px;
+  margin: 54px 10px 0;
+  z-index: 20;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.1),
+    0 2px 8px rgba(0,0,0,0.2);
+}
+
+.pw-brand {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--pw-text-bright);
+  text-transform: uppercase;
+  margin-right: 8px;
+  white-space: nowrap;
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.15),
+    0 -1px 0 rgba(0,0,0,0.12);
+}
+
+.pw-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pw-preset-select {
+  background: rgba(0,0,0,0.08);
+  color: var(--pw-text-bright);
+  border: 1px solid var(--pw-module-border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  outline: none;
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,0.1),
+    0 1px 0 rgba(255,255,255,0.1);
+}
+
+.pw-preset-select:focus {
+  border-color: var(--pw-accent);
+}
+
+.pw-add-btn {
+  background: rgba(0,0,0,0.06);
+  border: 1px solid var(--pw-module-border);
+  color: var(--pw-text);
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.15),
+    inset 0 -1px 0 rgba(0,0,0,0.1),
+    0 1px 2px rgba(0,0,0,0.12);
+}
+
+.pw-add-btn:hover {
+  background: rgba(0,0,0,0.1);
+  color: var(--pw-text-bright);
+  border-color: var(--pw-accent);
+}
+
+.pw-toolbar-spacer {
+  flex: 1;
+}
+
+.pw-skin-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pw-skin-label {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--pw-text);
+  margin-right: 2px;
+}
+
+.pw-skin-btn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+  padding: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.pw-skin-btn:hover {
+  transform: scale(1.2);
+}
+
+.pw-skin-btn.active {
+  border-color: rgba(0,0,0,0.4);
+}
+
+.pw-skin-btn[data-skin="circuit"] { background: #c44a28; }
+.pw-skin-btn[data-skin="ember"] { background: #e07020; }
+.pw-skin-btn[data-skin="acid"] { background: #cc3030; }
+
+/* === WORKSPACE — transparent with subtle crosshatch === */
+.pw-workspace {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+/* Patchwork stitching grid */
+.pw-workspace::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, var(--pw-dot) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+/* === SVG CABLE LAYER === */
+.pw-cables {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  overflow: visible;
+}
+
+.pw-cables path {
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.pw-cables path.pw-cable-line {
+  fill: none;
+  stroke: var(--pw-cable);
+  stroke-width: 3;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+  opacity: 0.9;
+  transition: opacity 0.15s;
+}
+
+.pw-cables path.pw-cable-line:hover {
+  stroke-width: 4.5;
+  opacity: 1;
+}
+
+.pw-cables path.pw-cable-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+}
+
+.pw-cables path.pw-cable-pending {
+  fill: none;
+  stroke: var(--pw-cable);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+  opacity: 0.5;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+}
+
+/* === MODULE BLOCKS — worn plastic panels === */
+.pw-module {
+  position: absolute;
+  background:
+    /* Plastic grain */
+    repeating-linear-gradient(
+      135deg,
+      transparent,
+      transparent 30px,
+      rgba(255,255,255,0.02) 30px,
+      rgba(255,255,255,0.02) 31px
+    ),
+    /* Worn sheen */
+    radial-gradient(
+      ellipse 120% 60% at 40% 20%,
+      rgba(255,255,255,0.08),
+      transparent 60%
+    ),
+    /* Base color */
+    linear-gradient(
+      180deg,
+      var(--pw-module) 0%,
+      var(--pw-module-secondary) 100%
+    );
+  border: 1px solid var(--pw-module-border);
+  border-radius: 6px;
+  padding: 0;
+  min-width: 140px;
+  z-index: 5;
+  box-shadow:
+    0 3px 12px rgba(0,0,0,0.25),
+    0 1px 3px rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.15),
+    inset 0 -1px 0 rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.pw-module:hover {
+  box-shadow:
+    0 4px 16px rgba(0,0,0,0.3),
+    0 1px 3px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.1);
+  border-color: var(--pw-accent);
+}
+
+/* Module header — embossed label strip */
+.pw-module-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px 4px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  cursor: grab;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.06);
+}
+
+.pw-module.pw-dragging .pw-module-header {
+  cursor: grabbing;
+}
+
+.pw-module-type {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--pw-text-bright);
+  text-transform: uppercase;
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.15),
+    0 -1px 0 rgba(0,0,0,0.12);
+}
+
+.pw-module-name {
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--pw-text);
+  margin-left: 6px;
+}
+
+.pw-module-delete {
+  background: none;
+  border: none;
+  color: var(--pw-text);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.pw-module:hover .pw-module-delete {
+  opacity: 0.5;
+}
+
+.pw-module-delete:hover {
+  opacity: 1 !important;
+  color: #c4332a;
+}
+
+/* Module body — jacks + knobs */
+.pw-module-body {
+  display: flex;
+  padding: 6px 0;
+  gap: 0;
+}
+
+/* Jack columns */
+.pw-jacks-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 6px;
+  justify-content: center;
+}
+
+.pw-jacks-in { align-items: flex-start; }
+.pw-jacks-out { align-items: flex-end; }
+
+/* Individual jack — recessed metal ring */
+.pw-jack {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--pw-jack-in);
+  background: var(--pw-module-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  position: relative;
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,0.25),
+    0 1px 0 rgba(255,255,255,0.1);
+}
+
+.pw-jack::after {
+  content: attr(data-label);
+  position: absolute;
+  font-size: 7px;
+  letter-spacing: 0.5px;
+  color: var(--pw-text);
+  white-space: nowrap;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.pw-jack.pw-jack-input::after {
+  left: 18px;
+}
+
+.pw-jack.pw-jack-output::after {
+  right: 18px;
+}
+
+.pw-jack.pw-jack-output {
+  border-color: var(--pw-jack-out);
+}
+
+.pw-jack:hover {
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,0.25),
+    0 0 6px var(--pw-accent-bright);
+  border-color: var(--pw-accent-bright);
+}
+
+.pw-jack.pw-jack-active {
+  background: var(--pw-accent);
+  box-shadow: 0 0 8px var(--pw-accent-bright);
+}
+
+.pw-jack.pw-jack-connected {
+  background: rgba(0,0,0,0.08);
+}
+
+.pw-jack.pw-jack-output.pw-jack-connected {
+  background: rgba(196,51,42,0.15);
+}
+
+/* Mod jack — diamond shape */
+.pw-jack.pw-jack-mod {
+  border-radius: 2px;
+  transform: rotate(45deg);
+  width: 11px;
+  height: 11px;
+}
+
+.pw-jack.pw-jack-mod::after {
+  transform: rotate(-45deg) translateY(-50%);
+}
+
+/* Knobs area */
+.pw-knobs-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  flex: 1;
+}
+
+.pw-knob-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.pw-knob-canvas {
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.pw-knob-label {
+  font-size: 7px;
+  letter-spacing: 0.5px;
+  color: var(--pw-text);
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.pw-knob-value {
+  font-size: 7px;
+  color: var(--pw-text-bright);
+  text-align: center;
+  min-height: 9px;
+}
+
+.pw-knob-group.dragging .pw-knob-value {
+  color: var(--pw-accent);
+}
+
+/* Waveform toggle button — raised plastic */
+.pw-wave-btn {
+  background: rgba(0,0,0,0.06);
+  border: 1px solid var(--pw-module-border);
+  color: var(--pw-text);
+  font-family: inherit;
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s, color 0.15s;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.1),
+    0 1px 2px rgba(0,0,0,0.1);
+}
+
+.pw-wave-btn:hover {
+  background: rgba(0,0,0,0.1);
+  color: var(--pw-text-bright);
+}
+
+/* Filter type toggle */
+.pw-type-btn {
+  background: rgba(0,0,0,0.06);
+  border: 1px solid var(--pw-module-border);
+  color: var(--pw-text);
+  font-family: inherit;
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s, color 0.15s;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.1),
+    0 1px 2px rgba(0,0,0,0.1);
+}
+
+.pw-type-btn:hover {
+  background: rgba(0,0,0,0.1);
+  color: var(--pw-text-bright);
+}
+
+/* OUT module — accent border */
+.pw-module[data-type="out"] {
+  border-color: var(--pw-accent);
+  border-width: 2px;
+}
+
+.pw-module[data-type="out"] .pw-module-delete {
+  display: none;
+}
+
+/* === MOBILE === */
+@media (max-width: 768px) {
+  .pw-workspace {
+    min-height: 280px;
+  }
+
+  .pw-module {
+    min-width: 120px;
+    transform: scale(0.9);
+    transform-origin: top left;
+  }
+
+  .pw-toolbar {
+    padding: 6px 8px;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin: 6px 6px 0;
+  }
+
+  .pw-brand {
+    font-size: 10px;
+  }
+
+  .pw-add-btn {
+    font-size: 8px;
+    padding: 2px 5px;
+  }
+}

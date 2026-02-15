@@ -69,6 +69,101 @@ const Nullamp = (() => {
       wave(t) {
         return `rgb(0, ${100 + t * 155}, ${t * 50})`;
       }
+    },
+    {
+      name: 'Amber',
+      bg: '#0a0600',
+      primary: '#ffa020',
+      secondary: '#804800',
+      accent: '#ffe080',
+      wave(t) {
+        return `rgb(${180 + t * 75}, ${120 + t * 80}, ${t * 30})`;
+      }
+    },
+    {
+      name: 'Ultraviolet',
+      bg: '#08001a',
+      primary: '#a040ff',
+      secondary: '#401080',
+      accent: '#e080ff',
+      wave(t) {
+        const h = 260 + t * 40;
+        return `hsl(${h}, 80%, ${40 + t * 30}%)`;
+      }
+    },
+    {
+      name: 'Ice',
+      bg: '#000a10',
+      primary: '#60c0e0',
+      secondary: '#204060',
+      accent: '#c0f0ff',
+      wave(t) {
+        return `rgb(${60 + t * 140}, ${160 + t * 80}, ${200 + t * 55})`;
+      }
+    },
+    {
+      name: 'Crimson',
+      bg: '#0a0004',
+      primary: '#e02040',
+      secondary: '#600818',
+      accent: '#ff6080',
+      wave(t) {
+        return `rgb(${150 + t * 105}, ${20 + t * 40}, ${30 + t * 50})`;
+      }
+    },
+    {
+      name: 'Vapor',
+      bg: '#0a0810',
+      primary: '#ff60a0',
+      secondary: '#402060',
+      accent: '#60d0ff',
+      wave(t, frame) {
+        const h = (300 + t * 120 + (frame || 0) * 0.8) % 360;
+        return `hsl(${h}, 75%, ${50 + t * 20}%)`;
+      }
+    },
+    {
+      name: 'Mono',
+      bg: '#080808',
+      primary: '#c0c0c0',
+      secondary: '#404040',
+      accent: '#ffffff',
+      wave(t) {
+        const v = Math.floor(100 + t * 155);
+        return `rgb(${v},${v},${v})`;
+      }
+    },
+    {
+      name: 'Toxic',
+      bg: '#040804',
+      primary: '#80e020',
+      secondary: '#305010',
+      accent: '#e0ff40',
+      wave(t) {
+        return `rgb(${80 + t * 120}, ${180 + t * 75}, ${t * 40})`;
+      }
+    },
+    {
+      name: 'Sunset',
+      bg: '#0a0408',
+      primary: '#ff5040',
+      secondary: '#802020',
+      accent: '#ffb040',
+      wave(t) {
+        const h = 10 + t * 30;
+        return `hsl(${h}, 90%, ${45 + t * 25}%)`;
+      }
+    },
+    {
+      name: 'Ocean',
+      bg: '#000810',
+      primary: '#2080c0',
+      secondary: '#0a3060',
+      accent: '#40c0a0',
+      wave(t) {
+        const h = 180 + t * 40;
+        return `hsl(${h}, 60%, ${35 + t * 30}%)`;
+      }
     }
   ];
 
