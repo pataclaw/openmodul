@@ -185,6 +185,45 @@
   flex: 1;
 }
 
+/* === MODE TOGGLE (Theme I / II) === */
+.nullamp-mode-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid rgba(64, 192, 64, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.nullamp-mode-btn {
+  width: 26px;
+  height: 22px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(64, 192, 64, 0.12);
+  color: rgba(64, 192, 64, 0.35);
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nullamp-mode-btn:last-child {
+  border-right: none;
+}
+
+.nullamp-mode-btn:hover {
+  background: rgba(64, 192, 64, 0.08);
+  color: rgba(64, 192, 64, 0.6);
+}
+
+.nullamp-mode-btn.active {
+  background: rgba(64, 192, 64, 0.15);
+  color: #40c040;
+  text-shadow: 0 0 6px rgba(64, 192, 64, 0.4);
+}
+
 /* Filename display */
 #nullamp-filename {
   font-size: 9px;

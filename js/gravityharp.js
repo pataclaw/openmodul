@@ -1,8 +1,9 @@
-// gravityharp.js — Gravity-driven string instrument
-// Dark void. Luminous strings. Falling particles. Reverb cave.
+// gravityharp.js — Gravity Harp — cosmic gravity well instrument
+// Concentric ring-strings around a gravity well. Drop particles,
+// watch them spiral inward, plucking each ring they cross.
+// Burst at the center. Hold to pour. Tilt to shift the well.
 const GravityHarp = (() => {
 
-  // --- Tuning presets (semitone offsets from C3) ---
   const TUNINGS = {
     pentatonic: [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24],
     chromatic:  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
@@ -11,7 +12,8 @@ const GravityHarp = (() => {
     major:      [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19]
   };
 
-  const BASE_FREQ = 130.81; // C3
+  const BASE_FREQ = 130.81;
+  const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
   // --- State ---
   let audioCtx = null;
@@ -23,11 +25,9 @@ const GravityHarp = (() => {
 
   let canvas = null;
   let ctx = null;
-  let strings = [];
+  let rings = [];
   let particles = [];
   let sparks = [];
-  let gravityX = 0;
-  let gravityY = 1;
   let animFrame = null;
   let initialized = false;
   let isOpen = false;
@@ -39,31 +39,53 @@ const GravityHarp = (() => {
   let lastTime = 0;
   let starField = [];
 
-  // Skin color palettes (used in canvas rendering)
+  // Gravity center offset (shifted by mouse tilt)
+  let gcOffX = 0;
+  let gcOffY = 0;
+
+  // Center burst glow
+  let centerGlow = 0;
+
+  // Hold-to-drop
+  let isHolding = false;
+  let holdX = 0;
+  let holdY = 0;
+  let holdTimer = null;
+
+  // Cosmic skins
   const SKINS = {
     void: {
-      bg: '#06040a',
-      string: [176, 96, 255],
-      stringGlow: 'rgba(176, 96, 255, 0.15)',
-      particle: [224, 192, 255],
-      spark: [200, 160, 255],
-      star: [140, 100, 200]
+      bg: '#050508',
+      ring: [170, 180, 200],
+      ringGlow: [200, 210, 230],
+      particle: [210, 220, 240],
+      trail: [140, 150, 180],
+      spark: [200, 210, 230],
+      center: [180, 190, 210],
+      star: [70, 80, 100],
+      noteLabel: 'rgba(170, 180, 200, 0.25)'
     },
-    aurora: {
-      bg: '#040810',
-      string: [64, 216, 160],
-      stringGlow: 'rgba(64, 216, 160, 0.15)',
-      particle: [160, 255, 224],
-      spark: [100, 230, 180],
-      star: [60, 140, 120]
+    nebula: {
+      bg: '#080604',
+      ring: [220, 175, 70],
+      ringGlow: [240, 195, 90],
+      particle: [255, 215, 130],
+      trail: [200, 155, 50],
+      spark: [255, 200, 90],
+      center: [220, 175, 70],
+      star: [100, 75, 35],
+      noteLabel: 'rgba(220, 175, 70, 0.25)'
     },
-    ember: {
-      bg: '#0a0604',
-      string: [255, 104, 64],
-      stringGlow: 'rgba(255, 104, 64, 0.15)',
-      particle: [255, 192, 160],
-      spark: [255, 140, 100],
-      star: [160, 80, 50]
+    quasar: {
+      bg: '#040508',
+      ring: [70, 140, 240],
+      ringGlow: [90, 160, 255],
+      particle: [190, 100, 255],
+      trail: [150, 70, 220],
+      spark: [170, 110, 255],
+      center: [110, 70, 255],
+      star: [35, 50, 110],
+      noteLabel: 'rgba(70, 140, 240, 0.25)'
     }
   };
 
@@ -79,73 +101,49 @@ const GravityHarp = (() => {
     if (!canvas) return;
     ctx = canvas.getContext('2d');
 
-    // Wire toolbar
     const tuningSelect = document.getElementById('gh-tuning');
-    if (tuningSelect) {
-      tuningSelect.addEventListener('change', () => {
-        currentTuning = tuningSelect.value;
-        buildStrings();
-      });
-    }
+    if (tuningSelect) tuningSelect.addEventListener('change', () => {
+      currentTuning = tuningSelect.value;
+      buildRings();
+    });
 
     const massSlider = document.getElementById('gh-mass');
-    if (massSlider) {
-      massSlider.addEventListener('input', () => {
-        massLevel = parseInt(massSlider.value);
-      });
-    }
+    if (massSlider) massSlider.addEventListener('input', () => { massLevel = parseInt(massSlider.value); });
 
     const reverbSlider = document.getElementById('gh-reverb');
-    if (reverbSlider) {
-      reverbSlider.addEventListener('input', () => {
-        reverbMix = parseInt(reverbSlider.value) / 100;
-        updateReverbMix();
-      });
-    }
+    if (reverbSlider) reverbSlider.addEventListener('input', () => {
+      reverbMix = parseInt(reverbSlider.value) / 100;
+      updateReverbMix();
+    });
 
     const gravitySlider = document.getElementById('gh-gravity');
-    if (gravitySlider) {
-      gravitySlider.addEventListener('input', () => {
-        gravityStrength = parseInt(gravitySlider.value);
-      });
-    }
+    if (gravitySlider) gravitySlider.addEventListener('input', () => { gravityStrength = parseInt(gravitySlider.value); });
 
     const clearBtn = document.getElementById('gh-clear');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        particles = [];
-        sparks = [];
-      });
-    }
+    if (clearBtn) clearBtn.addEventListener('click', () => { particles = []; sparks = []; });
 
-    // Skin selector
     body.querySelectorAll('.gh-skin-btn').forEach(btn => {
       btn.addEventListener('click', () => switchSkin(btn.dataset.skin));
     });
 
-    // Click/touch on stage to drop particle
     const stage = body.querySelector('.gh-stage');
     if (stage) {
-      stage.addEventListener('pointerdown', onStageClick);
+      stage.addEventListener('pointerdown', onStageDown);
+      stage.addEventListener('pointermove', onStageMove);
+      stage.addEventListener('pointerup', onStageUp);
+      stage.addEventListener('pointerleave', onStageUp);
     }
 
-    // Mouse gravity tilt (desktop)
-    if (stage) {
-      stage.addEventListener('pointermove', onPointerMove);
-    }
-
-    // Gyroscope gravity tilt (mobile)
     if (window.DeviceOrientationEvent) {
       window.addEventListener('deviceorientation', onDeviceOrientation);
     }
 
-    // WindowManager hooks
     if (typeof WindowManager !== 'undefined') {
       WindowManager.on('open', ({ id }) => { if (id === 'gravityharp') onWindowOpen(); });
       WindowManager.on('close', ({ id }) => { if (id === 'gravityharp') onWindowClose(); });
     }
 
-    buildStrings();
+    buildRings();
     generateStarField();
     resize();
   }
@@ -164,43 +162,35 @@ const GravityHarp = (() => {
       masterGain = audioCtx.createGain();
       masterGain.gain.value = 0.7;
 
-      // Dry path
       dryGain = audioCtx.createGain();
       dryGain.gain.value = 1 - reverbMix;
       masterGain.connect(dryGain);
       dryGain.connect(compressor);
 
-      // Reverb path
       reverbGain = audioCtx.createGain();
       reverbGain.gain.value = reverbMix;
       buildReverb();
     }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
   }
 
   function buildReverb() {
-    // Algorithmic reverb via convolver with generated impulse
-    const ctx = ensureAudio();
-    const sampleRate = ctx.sampleRate;
-    const length = sampleRate * 3; // 3 second tail
-    const buffer = ctx.createBuffer(2, length, sampleRate);
+    const ac = ensureAudio();
+    const sampleRate = ac.sampleRate;
+    const length = sampleRate * 3;
+    const buffer = ac.createBuffer(2, length, sampleRate);
 
     for (let ch = 0; ch < 2; ch++) {
       const data = buffer.getChannelData(ch);
       for (let i = 0; i < length; i++) {
-        // Exponential decay with diffusion
         const t = i / sampleRate;
-        const decay = Math.exp(-t * 2.2);
-        data[i] = (Math.random() * 2 - 1) * decay;
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 2.2);
       }
     }
 
-    reverbNode = ctx.createConvolver();
+    reverbNode = ac.createConvolver();
     reverbNode.buffer = buffer;
-
     masterGain.connect(reverbGain);
     reverbGain.connect(reverbNode);
     reverbNode.connect(compressor);
@@ -211,48 +201,43 @@ const GravityHarp = (() => {
     if (reverbGain) reverbGain.gain.value = reverbMix;
   }
 
-  function playStringSound(stringIndex, velocity) {
-    const ctx = ensureAudio();
-    const str = strings[stringIndex];
-    if (!str) return;
+  function playStringSound(ringIndex, velocity) {
+    const ac = ensureAudio();
+    const ring = rings[ringIndex];
+    if (!ring) return;
 
-    const freq = str.freq;
-    const now = ctx.currentTime;
+    const freq = ring.freq;
+    const now = ac.currentTime;
 
-    // Karplus-Strong inspired pluck — filtered noise burst + oscillator
-    const noteGain = ctx.createGain();
+    const noteGain = ac.createGain();
     const vel = Math.min(velocity, 1.5);
     noteGain.gain.setValueAtTime(0, now);
     noteGain.gain.linearRampToValueAtTime(vel * 0.18, now + 0.003);
     noteGain.gain.setTargetAtTime(0, now + 0.003, 0.3 + vel * 0.4);
     noteGain.connect(masterGain);
 
-    // Main tone — triangle for warm pluck
-    const osc = ctx.createOscillator();
+    const osc = ac.createOscillator();
     osc.type = 'triangle';
     osc.frequency.value = freq;
 
-    // Slight detune for richness
-    const osc2 = ctx.createOscillator();
+    const osc2 = ac.createOscillator();
     osc2.type = 'sine';
     osc2.frequency.value = freq * 1.002;
-    const osc2Gain = ctx.createGain();
+    const osc2Gain = ac.createGain();
     osc2Gain.gain.value = 0.3;
     osc2.connect(osc2Gain);
     osc2Gain.connect(noteGain);
 
-    // Harmonic shimmer
-    const osc3 = ctx.createOscillator();
+    const osc3 = ac.createOscillator();
     osc3.type = 'sine';
     osc3.frequency.value = freq * 2;
-    const osc3Gain = ctx.createGain();
+    const osc3Gain = ac.createGain();
     osc3Gain.gain.value = 0.08;
-    osc3Gain.connect(noteGain);
     osc3.connect(osc3Gain);
+    osc3Gain.connect(noteGain);
     osc3Gain.gain.setTargetAtTime(0, now + 0.01, 0.15);
 
-    // Filter sweep — brighter attack, settles to warm
-    const filter = ctx.createBiquadFilter();
+    const filter = ac.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(Math.min(freq * 8, 12000), now);
     filter.frequency.setTargetAtTime(freq * 2.5, now + 0.01, 0.2);
@@ -261,44 +246,30 @@ const GravityHarp = (() => {
     osc.connect(filter);
     filter.connect(noteGain);
 
-    osc.start(now);
-    osc2.start(now);
-    osc3.start(now);
-
+    osc.start(now); osc2.start(now); osc3.start(now);
     const stopTime = now + 3;
-    osc.stop(stopTime);
-    osc2.stop(stopTime);
-    osc3.stop(stopTime);
+    osc.stop(stopTime); osc2.stop(stopTime); osc3.stop(stopTime);
   }
 
-  // --- Strings ---
-  function buildStrings() {
+  // --- Rings (concentric circle-strings) ---
+  function buildRings() {
     const offsets = TUNINGS[currentTuning] || TUNINGS.pentatonic;
-    strings = offsets.map((semitone, i) => ({
-      index: i,
-      semitone,
-      freq: BASE_FREQ * Math.pow(2, semitone / 12),
-      displacement: 0,       // Current bend amount (pixels)
-      velocity: 0,           // Bend velocity for spring-back
-      lastPluckTime: 0
-    }));
-  }
-
-  function getStringPositions() {
-    if (!canvas || strings.length === 0) return [];
-    const w = canvas.width;
-    const h = canvas.height;
-    const margin = w * 0.08;
-    const usableW = w - margin * 2;
-    const gap = usableW / (strings.length - 1 || 1);
-
-    return strings.map((str, i) => {
-      const x = margin + i * gap;
+    const count = offsets.length;
+    rings = offsets.map((semitone, i) => {
+      // Outer = low pitch, inner = high pitch
+      // Logarithmic spacing (tighter near center)
+      const t = i / Math.max(count - 1, 1);
+      const radiusFrac = 0.88 * Math.pow(0.12 / 0.88, t);
       return {
-        x,
-        y1: h * 0.05,
-        y2: h * 0.95,
-        str
+        index: i,
+        semitone,
+        freq: BASE_FREQ * Math.pow(2, semitone / 12),
+        noteName: NOTE_NAMES[semitone % 12] + (3 + Math.floor(semitone / 12)),
+        radiusFrac,
+        displacement: 0,
+        velocity: 0,
+        lastPluckTime: 0,
+        glowIntensity: 0
       };
     });
   }
@@ -310,32 +281,47 @@ const GravityHarp = (() => {
       starField.push({
         x: Math.random(),
         y: Math.random(),
-        size: Math.random() * 1.5 + 0.3,
-        brightness: Math.random() * 0.4 + 0.1,
+        size: Math.random() < 0.2 ? 1.5 : 0.8,
+        brightness: Math.random() * 0.4 + 0.05,
         twinklePhase: Math.random() * Math.PI * 2,
-        twinkleSpeed: Math.random() * 0.5 + 0.3
+        twinkleSpeed: Math.random() * 0.4 + 0.2
       });
     }
   }
 
   // --- Particles ---
   function spawnParticle(x, y) {
+    const w = canvas.width, h = canvas.height;
+    const cx = w / 2 + gcOffX;
+    const cy = h / 2 + gcOffY;
+
+    const dx = x - cx, dy = y - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+    // Radial direction (toward center)
+    const rx = -dx / dist, ry = -dy / dist;
+    // Tangential direction (perpendicular — creates the spiral)
+    const tx = -ry, ty = rx;
+
     const mass = massLevel;
-    const radius = 3 + mass * 2;
+    const tangSpeed = 50 + mass * 12;
+    const radSpeed = 10 + mass * 5;
+
     particles.push({
       x, y,
-      vx: 0,
-      vy: 0,
+      vx: rx * radSpeed + tx * tangSpeed,
+      vy: ry * radSpeed + ty * tangSpeed,
       mass,
-      radius,
+      size: 2 + mass,
       life: 1,
-      age: 0
+      age: 0,
+      trail: [],
+      prevDist: dist
     });
   }
 
-  function spawnSparks(x, y, stringIndex) {
-    const skin = SKINS[currentSkin];
-    const count = 4 + Math.floor(Math.random() * 4);
+  function spawnSparks(x, y, count) {
+    count = count || (4 + Math.floor(Math.random() * 5));
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 30 + Math.random() * 80;
@@ -344,88 +330,111 @@ const GravityHarp = (() => {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         life: 1,
-        decay: 1.5 + Math.random() * 2,
-        size: 1 + Math.random() * 2
+        decay: 2 + Math.random() * 2.5,
+        size: Math.random() < 0.3 ? 2 : 1
+      });
+    }
+  }
+
+  function spawnCenterBurst(x, y) {
+    const count = 12 + Math.floor(Math.random() * 8);
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+      const speed = 60 + Math.random() * 120;
+      sparks.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1,
+        decay: 1.2 + Math.random() * 1.5,
+        size: 1 + Math.random() * 1.5
       });
     }
   }
 
   // --- Physics ---
   function updatePhysics(dt) {
-    if (dt > 0.1) dt = 0.1; // Cap delta for tab-away
+    if (dt > 0.1) dt = 0.1;
 
-    const gx = gravityX * gravityStrength * 3;
-    const gy = gravityY * gravityStrength * 3;
-
-    const stringPos = getStringPositions();
+    const w = canvas.width, h = canvas.height;
+    const cx = w / 2 + gcOffX;
+    const cy = h / 2 + gcOffY;
+    const halfSize = Math.min(w, h) / 2;
+    const force = gravityStrength * 2.5;
 
     // Update particles
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.age += dt;
 
-      // Apply gravity
-      p.vx += gx * dt;
-      p.vy += gy * dt;
+      // Trail
+      p.trail.push({ x: p.x, y: p.y });
+      if (p.trail.length > 30) p.trail.shift();
 
-      // Air resistance (light damping)
-      p.vx *= 0.998;
-      p.vy *= 0.998;
+      // Gravity toward center
+      const dx = cx - p.x, dy = cy - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      const ax = (dx / dist) * force;
+      const ay = (dy / dist) * force;
+      p.vx += ax * dt;
+      p.vy += ay * dt;
+
+      // Light damping (creates decaying orbit → spiral)
+      p.vx *= 0.997;
+      p.vy *= 0.997;
 
       // Move
       p.x += p.vx * dt;
       p.y += p.vy * dt;
 
-      // Check string collisions
-      for (let j = 0; j < stringPos.length; j++) {
-        const sp = stringPos[j];
-        const str = sp.str;
-        const dx = p.x - sp.x;
-        const hitDist = p.radius + 3;
+      // Check ring crossings
+      const newDist = Math.sqrt((p.x - cx) ** 2 + (p.y - cy) ** 2);
 
-        // Is particle within vertical range of string?
-        if (p.y >= sp.y1 && p.y <= sp.y2 && Math.abs(dx) < hitDist) {
-          // Velocity relative to string direction
-          const relVx = p.vx;
-          const impactSpeed = Math.abs(relVx);
+      for (const ring of rings) {
+        const ringR = ring.radiusFrac * halfSize;
+        const crossed = (p.prevDist > ringR && newDist <= ringR) ||
+                        (p.prevDist < ringR && newDist >= ringR);
 
-          if (impactSpeed > 5) {
-            // Pluck!
-            const velocity = Math.min(impactSpeed / 150, 1.5);
+        if (crossed) {
+          const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+          if (speed > 2) {
             const now = performance.now();
-
-            // Debounce — don't re-pluck same string within 60ms
-            if (now - str.lastPluckTime > 60) {
-              str.lastPluckTime = now;
-              str.displacement += (dx > 0 ? -1 : 1) * Math.min(velocity * 12, 18);
-              str.velocity += (dx > 0 ? -1 : 1) * velocity * 40;
-              playStringSound(j, velocity);
-              spawnSparks(sp.x, p.y, j);
+            if (now - ring.lastPluckTime > 45) {
+              ring.lastPluckTime = now;
+              const velocity = Math.min(speed / 100, 1.5);
+              const dir = newDist < p.prevDist ? -1 : 1;
+              ring.displacement += dir * Math.min(velocity * 4, 6);
+              ring.velocity += dir * velocity * 15;
+              ring.glowIntensity = Math.min(1, ring.glowIntensity + velocity * 0.6);
+              playStringSound(ring.index, velocity);
+              spawnSparks(p.x, p.y, 3);
             }
-
-            // Bounce particle slightly
-            p.vx *= -0.3;
-            p.x = sp.x + (dx > 0 ? hitDist : -hitDist);
+            // Slow particle slightly on crossing
+            p.vx *= 0.9;
+            p.vy *= 0.9;
           }
         }
       }
 
-      // Fade out particles that go off-screen (with margin)
+      p.prevDist = newDist;
+
+      // Center burst — particle falls into the well
+      if (newDist < halfSize * 0.07) {
+        spawnCenterBurst(p.x, p.y);
+        centerGlow = Math.min(1, centerGlow + 0.4);
+        p.life = 0;
+      }
+
+      // Off-screen removal
       const margin = 100;
-      if (p.x < -margin || p.x > canvas.width + margin ||
-          p.y < -margin || p.y > canvas.height + margin) {
-        p.life -= dt * 2;
+      if (p.x < -margin || p.x > w + margin || p.y < -margin || p.y > h + margin) {
+        p.life -= dt * 3;
       }
 
-      // Age-based fade for very old particles
-      if (p.age > 15) {
-        p.life -= dt * 0.5;
-      }
-
-      if (p.life <= 0) {
-        particles.splice(i, 1);
-      }
+      if (p.age > 30) p.life -= dt * 0.3;
+      if (p.life <= 0) particles.splice(i, 1);
     }
+    if (particles.length > 150) particles.splice(0, particles.length - 150);
 
     // Update sparks
     for (let i = sparks.length - 1; i >= 0; i--) {
@@ -434,27 +443,27 @@ const GravityHarp = (() => {
       s.y += s.vy * dt;
       s.vx *= 0.96;
       s.vy *= 0.96;
-      s.vy += gy * dt * 0.3;
       s.life -= dt * s.decay;
-      if (s.life <= 0) {
-        sparks.splice(i, 1);
+      if (s.life <= 0) sparks.splice(i, 1);
+    }
+    if (sparks.length > 300) sparks.splice(0, sparks.length - 300);
+
+    // Ring spring physics
+    for (const ring of rings) {
+      const spring = 600;
+      const damping = 5;
+      const accel = -spring * ring.displacement - damping * ring.velocity;
+      ring.velocity += accel * dt;
+      ring.displacement += ring.velocity * dt;
+      if (Math.abs(ring.displacement) < 0.01 && Math.abs(ring.velocity) < 0.1) {
+        ring.displacement = 0;
+        ring.velocity = 0;
       }
+      ring.glowIntensity *= 0.97;
     }
 
-    // Update string vibrations (damped spring)
-    for (const str of strings) {
-      const spring = 800;
-      const damping = 6;
-      const accel = -spring * str.displacement - damping * str.velocity;
-      str.velocity += accel * dt;
-      str.displacement += str.velocity * dt;
-
-      // Kill micro-vibrations
-      if (Math.abs(str.displacement) < 0.01 && Math.abs(str.velocity) < 0.1) {
-        str.displacement = 0;
-        str.velocity = 0;
-      }
-    }
+    // Center glow decay
+    centerGlow *= 0.94;
   }
 
   // --- Rendering ---
@@ -468,210 +477,208 @@ const GravityHarp = (() => {
 
     const w = canvas.width;
     const h = canvas.height;
+    const cx = w / 2 + gcOffX;
+    const cy = h / 2 + gcOffY;
+    const halfSize = Math.min(w, h) / 2;
     const skin = SKINS[currentSkin];
+    const t = time * 0.001;
 
-    // Clear with slight trail
+    // Clear with trail (longer trail = visible spirals)
     ctx.fillStyle = skin.bg;
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = 0.12;
     ctx.fillRect(0, 0, w, h);
     ctx.globalAlpha = 1;
 
     // Stars
-    const t = time * 0.001;
     for (const star of starField) {
       const twinkle = 0.5 + 0.5 * Math.sin(t * star.twinkleSpeed + star.twinklePhase);
       const alpha = star.brightness * twinkle;
       const [r, g, b] = skin.star;
       ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
-      ctx.fillRect(star.x * w, star.y * h, star.size, star.size);
+      ctx.fillRect(Math.floor(star.x * w), Math.floor(star.y * h), star.size, star.size);
     }
 
-    const stringPos = getStringPositions();
+    // === Center vortex glow ===
+    const [cr, cg, cb] = skin.center;
+    if (centerGlow > 0.01) {
+      const crad = halfSize * 0.14;
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, crad);
+      grad.addColorStop(0, `rgba(${cr},${cg},${cb},${centerGlow * 0.5})`);
+      grad.addColorStop(0.5, `rgba(${cr},${cg},${cb},${centerGlow * 0.15})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, crad, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-    // Draw strings
-    for (let i = 0; i < stringPos.length; i++) {
-      const sp = stringPos[i];
-      const str = sp.str;
-      const [r, g, b] = skin.string;
-      const disp = str.displacement;
-      const vibAmp = Math.abs(disp);
+    // Center dot (always visible — the well)
+    ctx.fillStyle = `rgba(${cr},${cg},${cb},${0.15 + centerGlow * 0.3})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+    ctx.fill();
 
-      // Glow behind string (wider when vibrating)
-      if (vibAmp > 0.5) {
-        const glowWidth = 6 + vibAmp * 1.5;
-        const glowAlpha = Math.min(vibAmp / 15, 0.3);
-        ctx.strokeStyle = `rgba(${r},${g},${b},${glowAlpha})`;
-        ctx.lineWidth = glowWidth;
+    // === Rings ===
+    const [rr, rg, rb] = skin.ring;
+    const [gr, gg, gb] = skin.ringGlow;
+
+    for (const ring of rings) {
+      const radius = ring.radiusFrac * halfSize + ring.displacement;
+      if (radius < 2) continue;
+      const vibAmp = Math.abs(ring.displacement);
+      const intensity = Math.max(vibAmp / 4, ring.glowIntensity);
+
+      // Glow halo
+      if (intensity > 0.02) {
+        ctx.strokeStyle = `rgba(${gr},${gg},${gb},${intensity * 0.2})`;
+        ctx.lineWidth = 3 + intensity * 5;
         ctx.beginPath();
-        drawBentString(ctx, sp.x, sp.y1, sp.y2, disp);
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
         ctx.stroke();
       }
 
-      // String line
-      const baseAlpha = 0.4 + Math.min(vibAmp / 10, 0.4);
-      ctx.strokeStyle = `rgba(${r},${g},${b},${baseAlpha})`;
-      ctx.lineWidth = 1.5;
+      // Ring line
+      const ringAlpha = 0.15 + intensity * 0.45;
+      ctx.strokeStyle = `rgba(${rr},${rg},${rb},${ringAlpha})`;
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      drawBentString(ctx, sp.x, sp.y1, sp.y2, disp);
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Anchor dots
-      ctx.fillStyle = `rgba(${r},${g},${b},0.6)`;
-      ctx.beginPath();
-      ctx.arc(sp.x, sp.y1, 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(sp.x, sp.y2, 2, 0, Math.PI * 2);
-      ctx.fill();
+      // Note label (right side of ring)
+      ctx.fillStyle = skin.noteLabel;
+      ctx.font = '7px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(ring.noteName, cx + radius + 5, cy);
     }
 
-    // Draw sparks
-    for (const s of sparks) {
-      const [r, g, b] = skin.spark;
-      ctx.fillStyle = `rgba(${r},${g},${b},${s.life * 0.8})`;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.size * s.life, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Draw particles
+    // === Particle trails (spiral paths) ===
+    const [tr, tg, tb] = skin.trail;
     for (const p of particles) {
-      const [r, g, b] = skin.particle;
-      const alpha = p.life * 0.9;
+      const alpha = p.life;
 
-      // Glow
-      const glowR = p.radius * 3;
-      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-      grad.addColorStop(0, `rgba(${r},${g},${b},${alpha * 0.3})`);
-      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
-      ctx.fillStyle = grad;
+      if (p.trail.length > 2) {
+        // Draw trail segments with fading opacity
+        for (let ti = 1; ti < p.trail.length; ti++) {
+          const segAlpha = (ti / p.trail.length) * alpha * 0.35;
+          const segWidth = 0.5 + (ti / p.trail.length) * 1.5;
+          ctx.strokeStyle = `rgba(${tr},${tg},${tb},${segAlpha})`;
+          ctx.lineWidth = segWidth;
+          ctx.beginPath();
+          ctx.moveTo(p.trail[ti - 1].x, p.trail[ti - 1].y);
+          ctx.lineTo(p.trail[ti].x, p.trail[ti].y);
+          ctx.stroke();
+        }
+      }
+
+      // Particle glow
+      const [pr, pg, pb] = skin.particle;
+      const glowR = p.size * 3;
+      ctx.fillStyle = `rgba(${pr},${pg},${pb},${alpha * 0.1})`;
       ctx.beginPath();
       ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
       ctx.fill();
 
-      // Core
-      ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+      // Particle core
+      ctx.fillStyle = `rgba(${pr},${pg},${pb},${alpha * 0.85})`;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
 
       // Bright center
       ctx.fillStyle = `rgba(255,255,255,${alpha * 0.5})`;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius * 0.35, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size * 0.3, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Gravity indicator — subtle arrow in bottom-right
-    drawGravityIndicator(w, h, t);
+    // === Sparks ===
+    const [sr, sg, sb] = skin.spark;
+    for (const s of sparks) {
+      ctx.fillStyle = `rgba(${sr},${sg},${sb},${s.life * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.size * s.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Subtle vignette
+    const vr = Math.max(w, h) * 0.6;
+    const vig = ctx.createRadialGradient(w / 2, h / 2, vr * 0.4, w / 2, h / 2, vr);
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, 'rgba(0,0,0,0.3)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, w, h);
 
     animFrame = requestAnimationFrame(render);
   }
 
-  function drawBentString(ctx, x, y1, y2, displacement) {
-    // Quadratic bend through middle
-    const midY = (y1 + y2) / 2;
-    ctx.moveTo(x, y1);
-    ctx.quadraticCurveTo(x + displacement, midY, x, y2);
-  }
-
-  function drawGravityIndicator(w, h, t) {
-    const cx = w - 30;
-    const cy = h - 30;
-    const len = 12;
-    const angle = Math.atan2(gravityY, gravityX);
-
-    ctx.save();
-    ctx.globalAlpha = 0.2;
-    const skin = SKINS[currentSkin];
-    const [r, g, b] = skin.string;
-
-    // Circle
-    ctx.strokeStyle = `rgba(${r},${g},${b},0.3)`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 16, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Arrow
-    ctx.strokeStyle = `rgba(${r},${g},${b},0.6)`;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(angle) * len, cy + Math.sin(angle) * len);
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
   // --- Input ---
-  function onStageClick(e) {
+  function onStageDown(e) {
     if (!canvas) return;
     ensureAudio();
 
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    holdX = (e.clientX - rect.left) * scaleX;
+    holdY = (e.clientY - rect.top) * scaleY;
 
-    spawnParticle(x, y);
+    spawnParticle(holdX, holdY);
+    isHolding = true;
+
+    if (holdTimer) clearInterval(holdTimer);
+    holdTimer = setInterval(() => {
+      if (isHolding) {
+        spawnParticle(
+          holdX + (Math.random() - 0.5) * 14,
+          holdY + (Math.random() - 0.5) * 14
+        );
+      }
+    }, 70);
   }
 
-  function onPointerMove(e) {
+  function onStageMove(e) {
     if (!canvas || !isOpen) return;
 
     const rect = canvas.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
 
-    // Map mouse position to gravity direction
-    // Center = straight down, edges = tilted
-    const dx = (e.clientX - cx) / (rect.width / 2);
-    const dy = (e.clientY - cy) / (rect.height / 2);
+    if (isHolding) {
+      holdX = (e.clientX - rect.left) * scaleX;
+      holdY = (e.clientY - rect.top) * scaleY;
+    }
 
-    // Gentle tilt — bias toward down
-    const tiltStrength = 0.35;
-    gravityX = dx * tiltStrength;
-    gravityY = 0.7 + dy * 0.3;
+    // Subtle gravity center tilt
+    const relX = (e.clientX - rect.left) / rect.width - 0.5;
+    const relY = (e.clientY - rect.top) / rect.height - 0.5;
+    gcOffX = relX * 30;
+    gcOffY = relY * 30;
+  }
 
-    // Normalize
-    const len = Math.sqrt(gravityX * gravityX + gravityY * gravityY);
-    if (len > 0) {
-      gravityX /= len;
-      gravityY /= len;
+  function onStageUp() {
+    isHolding = false;
+    if (holdTimer) {
+      clearInterval(holdTimer);
+      holdTimer = null;
     }
   }
 
   function onDeviceOrientation(e) {
     if (!isOpen) return;
-
-    // gamma: left-right tilt (-90 to 90)
-    // beta: front-back tilt (-180 to 180)
-    const gamma = (e.gamma || 0) / 45;  // Normalize to -1..1 (at 45 degrees)
+    const gamma = (e.gamma || 0) / 45;
     const beta = (e.beta || 0) / 45;
-
-    const tiltStrength = 0.5;
-    gravityX = Math.max(-1, Math.min(1, gamma)) * tiltStrength;
-    gravityY = 0.6 + Math.max(-0.4, Math.min(0.4, (beta - 1) * 0.3));
-
-    const len = Math.sqrt(gravityX * gravityX + gravityY * gravityY);
-    if (len > 0) {
-      gravityX /= len;
-      gravityY /= len;
-    }
+    gcOffX = Math.max(-40, Math.min(40, gamma * 40));
+    gcOffY = Math.max(-40, Math.min(40, (beta - 0.5) * 40));
   }
 
   // --- Skin ---
   function switchSkin(skin) {
     if (!SKINS[skin]) return;
     currentSkin = skin;
-
     const body = document.getElementById('gravityharp-body');
-    if (body) {
-      body.className = `skin-${skin}`;
-    }
-
+    if (body) body.className = `skin-${skin}`;
     body.querySelectorAll('.gh-skin-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.skin === skin);
     });
@@ -684,7 +691,6 @@ const GravityHarp = (() => {
     resize();
     lastTime = 0;
 
-    // Clear canvas fully on open (no trails from old session)
     if (ctx && canvas) {
       ctx.fillStyle = SKINS[currentSkin].bg;
       ctx.globalAlpha = 1;
@@ -696,6 +702,7 @@ const GravityHarp = (() => {
 
   function onWindowClose() {
     isOpen = false;
+    onStageUp();
     if (animFrame) {
       cancelAnimationFrame(animFrame);
       animFrame = null;
@@ -707,7 +714,6 @@ const GravityHarp = (() => {
     if (!canvas) return;
     const parent = canvas.parentElement;
     if (!parent) return;
-
     const rect = parent.getBoundingClientRect();
     canvas.width = rect.width;
     canvas.height = rect.height;

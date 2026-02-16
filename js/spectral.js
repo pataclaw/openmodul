@@ -1,9 +1,9 @@
 // spectral.js — Spectral freezer / vocoder instrument
 // Capture sound. Freeze its spectrum. Play it like a keyboard.
-// Northern lights FFT visualization. Wavetable synthesis engine.
+// Breakbeat punk aesthetic. 3D plastic extruded blocks. Wild shapes.
 const Spectral = (() => {
 
-  // --- Keyboard layout (2 octaves, C3–B4) ---
+  // --- Keyboard layout (2 octaves, C3-B4) ---
   const KEYS = [
     { note: 'C3',  midi: 48, black: false },
     { note: 'C#3', midi: 49, black: true },
@@ -31,50 +31,81 @@ const Spectral = (() => {
     { note: 'B4',  midi: 71, black: false }
   ];
 
-  // QWERTY keyboard mapping → MIDI note
   const QWERTY_MAP = {
     'a': 48, 'w': 49, 's': 50, 'e': 51, 'd': 52, 'f': 53,
     't': 54, 'g': 55, 'y': 56, 'h': 57, 'u': 58, 'j': 59,
     'k': 60, 'o': 61, 'l': 62, 'p': 63, ';': 64
   };
 
-  // Skin palettes for canvas
+  // Breakbeat punk palettes — neon, aggressive, plastic
   const SKINS = {
-    aurora: {
-      bg: '#040810',
+    acid: {
+      bg: '#0a0a0a',
       bar: (i, total) => {
         const t = i / total;
-        const r = Math.floor(40 + t * 120);
-        const g = Math.floor(216 - t * 80);
-        const b = Math.floor(208 + t * 47);
+        const r = Math.floor(255 - t * 120);
+        const g = Math.floor(32 + t * 224);
+        const b = Math.floor(128 - t * 80);
         return [r, g, b];
       },
-      glow: [64, 216, 208],
-      frozen: [255, 64, 128],
-      text: [96, 128, 144]
+      barTop: (i, total) => {
+        const t = i / total;
+        return [255, Math.floor(80 + t * 175), Math.floor(180 - t * 60)];
+      },
+      barSide: (i, total) => {
+        const t = i / total;
+        return [Math.floor(140 - t * 60), Math.floor(20 + t * 100), Math.floor(80 - t * 40)];
+      },
+      glow: [255, 32, 128],
+      frozen: [64, 255, 128],
+      text: [128, 80, 100],
+      glitch: [255, 32, 128],
+      depth: 8
     },
-    solar: {
-      bg: '#0c0604',
+    chrome: {
+      bg: '#080808',
       bar: (i, total) => {
         const t = i / total;
-        const r = 255;
-        const g = Math.floor(128 - t * 68);
-        const b = Math.floor(64 - t * 4);
+        const r = Math.floor(64 + t * 60);
+        const g = Math.floor(128 + t * 40);
+        const b = Math.floor(255 - t * 40);
         return [r, g, b];
       },
-      glow: [255, 128, 64],
-      frozen: [255, 64, 64],
-      text: [160, 128, 112]
-    },
-    void: {
-      bg: '#060606',
-      bar: (i, total) => {
-        const v = Math.floor(180 + (i / total) * 40);
-        return [v, v, v];
+      barTop: (i, total) => {
+        const t = i / total;
+        return [Math.floor(120 + t * 80), Math.floor(180 + t * 50), 255];
       },
-      glow: [224, 224, 224],
+      barSide: (i, total) => {
+        const t = i / total;
+        return [Math.floor(30 + t * 30), Math.floor(60 + t * 20), Math.floor(140 - t * 20)];
+      },
+      glow: [64, 128, 255],
+      frozen: [200, 220, 255],
+      text: [80, 100, 130],
+      glitch: [64, 128, 255],
+      depth: 7
+    },
+    noise: {
+      bg: '#0a0808',
+      bar: (i, total) => {
+        const t = i / total;
+        const r = Math.floor(255 - t * 40);
+        const g = Math.floor(64 - t * 40);
+        const b = Math.floor(64 - t * 40);
+        return [r, g, b];
+      },
+      barTop: (i, total) => {
+        return [255, 200, 200];
+      },
+      barSide: (i, total) => {
+        const t = i / total;
+        return [Math.floor(120 - t * 30), Math.floor(20), Math.floor(20)];
+      },
+      glow: [255, 64, 64],
       frozen: [255, 255, 255],
-      text: [96, 96, 96]
+      text: [120, 80, 80],
+      glitch: [255, 40, 40],
+      depth: 9
     }
   };
 
@@ -86,8 +117,8 @@ const Spectral = (() => {
   let reverbGain = null;
   let dryGain = null;
   let compressor = null;
-  let sourceNode = null;   // Current audio source (drone osc, mic, or file)
-  let droneNodes = null;   // Drone oscillators
+  let sourceNode = null;
+  let droneNodes = null;
   let micStream = null;
 
   let canvas = null;
@@ -95,24 +126,32 @@ const Spectral = (() => {
   let animFrame = null;
   let initialized = false;
   let isOpen = false;
-  let currentSkin = 'aurora';
+  let currentSkin = 'acid';
   let currentSource = 'drone';
 
   let frozen = false;
-  let frozenBuffer = null;  // AudioBuffer of captured wavetable
-  let frozenSpectrum = null; // Uint8Array snapshot for visual
-  let frozenFundamental = 261.63; // C4 — base pitch of frozen sample
+  let frozenBuffer = null;
+  let frozenSpectrum = null;
+  let frozenFundamental = 261.63;
 
   let attackMs = 20;
   let releaseMs = 400;
   let reverbMix = 0.5;
 
-  let activeVoices = new Map(); // midi → { source, gain }
+  let activeVoices = new Map();
   let fftData = null;
-  let keyElements = new Map(); // midi → DOM element
+  let keyElements = new Map();
 
   let lastTime = 0;
   let frozenGlowPhase = 0;
+  let frameCount = 0;
+
+  // Bounce state for bars
+  let barBounce = new Float32Array(128);
+  let barVelocity = new Float32Array(128);
+
+  // Glitch lines
+  let glitchLines = [];
 
   // --- Init ---
   function init() {
@@ -126,10 +165,8 @@ const Spectral = (() => {
     if (!canvas) return;
     ctx = canvas.getContext('2d');
 
-    // Build keyboard
     buildKeyboard();
 
-    // Wire toolbar
     const freezeBtn = document.getElementById('sp-freeze');
     if (freezeBtn) freezeBtn.addEventListener('click', toggleFreeze);
 
@@ -145,25 +182,20 @@ const Spectral = (() => {
       updateReverbMix();
     });
 
-    // Source buttons
     body.querySelectorAll('.sp-source-btn').forEach(btn => {
       btn.addEventListener('click', () => switchSource(btn.dataset.source));
     });
 
-    // Skin buttons
     body.querySelectorAll('.sp-skin-btn').forEach(btn => {
       btn.addEventListener('click', () => switchSkin(btn.dataset.skin));
     });
 
-    // File input
     const fileInput = document.getElementById('sp-file');
     if (fileInput) fileInput.addEventListener('change', onFileSelected);
 
-    // QWERTY keyboard
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
 
-    // WindowManager hooks
     if (typeof WindowManager !== 'undefined') {
       WindowManager.on('open', ({ id }) => { if (id === 'spectral') onWindowOpen(); });
       WindowManager.on('close', ({ id }) => { if (id === 'spectral') onWindowClose(); });
@@ -241,7 +273,6 @@ const Spectral = (() => {
       btn.classList.toggle('active', btn.dataset.source === source);
     });
 
-    // Unfreeze when switching source
     if (frozen) toggleFreeze();
 
     if (source === 'drone') startDrone();
@@ -269,15 +300,13 @@ const Spectral = (() => {
   function startDrone() {
     const ac = ensureAudio();
 
-    // Rich drone: 3 detuned saws + sub sine
     const droneGain = ac.createGain();
     droneGain.gain.value = 0.15;
     droneGain.connect(analyser);
 
     const nodes = [];
-    const baseFreq = 130.81; // C3
+    const baseFreq = 130.81;
 
-    // Main saws
     [0, 5, -3].forEach(detune => {
       const osc = ac.createOscillator();
       osc.type = 'sawtooth';
@@ -288,7 +317,6 @@ const Spectral = (() => {
       nodes.push(osc);
     });
 
-    // Sub sine
     const sub = ac.createOscillator();
     sub.type = 'sine';
     sub.frequency.value = baseFreq / 2;
@@ -299,7 +327,6 @@ const Spectral = (() => {
     sub.start();
     nodes.push(sub);
 
-    // Slow filter sweep for movement
     const filter = ac.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = 800;
@@ -308,7 +335,6 @@ const Spectral = (() => {
     droneGain.connect(filter);
     filter.connect(analyser);
 
-    // LFO on filter
     const lfo = ac.createOscillator();
     lfo.type = 'sine';
     lfo.frequency.value = 0.15;
@@ -331,7 +357,6 @@ const Spectral = (() => {
       micSource.connect(analyser);
       sourceNode = micSource;
     } catch (e) {
-      // Fall back to drone if mic denied
       switchSource('drone');
     }
   }
@@ -365,21 +390,16 @@ const Spectral = (() => {
     const indicator = document.getElementById('sp-freeze-indicator');
 
     if (!frozen) {
-      // Capture wavetable from analyser
-      // Get time-domain data for wavetable
       const bufferLength = analyser.fftSize;
       const timeData = new Float32Array(bufferLength);
       analyser.getFloatTimeDomainData(timeData);
 
-      // Create an AudioBuffer from captured waveform
       frozenBuffer = ac.createBuffer(1, bufferLength, ac.sampleRate);
       frozenBuffer.getChannelData(0).set(timeData);
 
-      // Capture spectrum for visualization
       frozenSpectrum = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(frozenSpectrum);
 
-      // Detect fundamental frequency for pitch tracking
       frozenFundamental = detectFundamental(timeData, ac.sampleRate) || 261.63;
 
       frozen = true;
@@ -393,7 +413,6 @@ const Spectral = (() => {
       frozenBuffer = null;
       frozenSpectrum = null;
 
-      // Release all playing voices
       activeVoices.forEach((voice, midi) => releaseVoice(midi));
 
       if (freezeBtn) freezeBtn.classList.remove('frozen');
@@ -405,10 +424,9 @@ const Spectral = (() => {
   }
 
   function detectFundamental(timeData, sampleRate) {
-    // Autocorrelation-based pitch detection
     const n = timeData.length;
-    const maxLag = Math.floor(sampleRate / 60);  // Min 60Hz
-    const minLag = Math.floor(sampleRate / 1000); // Max 1000Hz
+    const maxLag = Math.floor(sampleRate / 60);
+    const minLag = Math.floor(sampleRate / 1000);
 
     let bestCorr = 0;
     let bestLag = 0;
@@ -434,10 +452,8 @@ const Spectral = (() => {
 
     const ac = ensureAudio();
 
-    // Kill existing voice on this key
     if (activeVoices.has(midi)) releaseVoice(midi);
 
-    // Playback rate = desired freq / frozen fundamental freq
     const targetFreq = 440 * Math.pow(2, (midi - 69) / 12);
     const rate = targetFreq / frozenFundamental;
 
@@ -456,7 +472,6 @@ const Spectral = (() => {
 
     activeVoices.set(midi, { source, gain });
 
-    // Visual
     const el = keyElements.get(midi);
     if (el) el.classList.add('active');
   }
@@ -480,7 +495,6 @@ const Spectral = (() => {
 
     activeVoices.delete(midi);
 
-    // Visual
     const el = keyElements.get(midi);
     if (el) el.classList.remove('active');
   }
@@ -497,10 +511,9 @@ const Spectral = (() => {
 
       const label = document.createElement('span');
       label.className = 'sp-key-label';
-      label.textContent = key.note.replace('#', '#');
+      label.textContent = key.note;
       el.appendChild(label);
 
-      // Pointer events for mouse/touch
       el.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         playVoice(key.midi);
@@ -515,7 +528,6 @@ const Spectral = (() => {
     });
   }
 
-  // QWERTY input
   const heldKeys = new Set();
 
   function onKeyDown(e) {
@@ -540,13 +552,14 @@ const Spectral = (() => {
     }
   }
 
-  // --- Rendering ---
+  // --- Rendering (breakbeat punk 3D blocks) ---
   function render(time) {
     if (!isOpen || !ctx || !canvas) return;
 
     const dt = lastTime ? (time - lastTime) / 1000 : 0.016;
     lastTime = time;
     frozenGlowPhase += dt;
+    frameCount++;
 
     const w = canvas.width;
     const h = canvas.height;
@@ -568,50 +581,121 @@ const Spectral = (() => {
       return;
     }
 
-    const barCount = Math.min(spectrum.length, 128);
+    const barCount = Math.min(spectrum.length, 96);
     const binStep = Math.floor(spectrum.length / barCount);
-    const barWidth = w / barCount;
-    const padding = 1;
+    const totalBarW = w * 0.92;
+    const barW = totalBarW / barCount;
+    const barMargin = (w - totalBarW) / 2;
+    const depth = skin.depth;
+    const dxOff = depth * 0.7;  // 3D x-offset
+    const dyOff = -depth * 0.6; // 3D y-offset
 
-    // Draw bars
+    // Update bar bounce physics
     for (let i = 0; i < barCount; i++) {
-      // Average nearby bins for smoother look
       let sum = 0;
       const binStart = i * binStep;
       for (let b = 0; b < binStep; b++) {
         sum += spectrum[binStart + b] || 0;
       }
-      const value = sum / binStep / 255;
-      const barH = value * h * 0.85;
+      const target = (sum / binStep / 255) * h * 0.78;
 
-      if (barH < 1) continue;
+      // Spring to target
+      const springK = 28;
+      const dampK = 8;
+      const force = (target - barBounce[i]) * springK - barVelocity[i] * dampK;
+      barVelocity[i] += force * dt;
+      barBounce[i] += barVelocity[i] * dt;
+      if (barBounce[i] < 0) { barBounce[i] = 0; barVelocity[i] = 0; }
+    }
 
-      const [r, g, b] = skin.bar(i, barCount);
-
-      // Frozen shimmer
-      let alpha = 0.8;
-      if (frozen) {
-        const shimmer = 0.6 + 0.4 * Math.sin(frozenGlowPhase * 1.5 + i * 0.1);
-        alpha = shimmer * 0.9;
-      }
-
-      // Glow behind bar
-      const glowAlpha = value * 0.15 * alpha;
-      ctx.fillStyle = `rgba(${r},${g},${b},${glowAlpha})`;
-      ctx.fillRect(i * barWidth - 2, h - barH - 4, barWidth + 4, barH + 8);
-
-      // Main bar
-      ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
-      ctx.fillRect(i * barWidth + padding, h - barH, barWidth - padding * 2, barH);
-
-      // Bright cap
-      if (barH > 4) {
-        ctx.fillStyle = `rgba(${r},${g},${b},${alpha * 1.2})`;
-        ctx.fillRect(i * barWidth + padding, h - barH, barWidth - padding * 2, 2);
+    // Spawn glitch lines on energy peaks
+    if (frameCount % 3 === 0) {
+      let energy = 0;
+      for (let i = 0; i < 16; i++) energy += spectrum[i] || 0;
+      energy /= (16 * 255);
+      if (energy > 0.4 && Math.random() < energy * 0.5) {
+        const [gr, gg, gb] = skin.glitch;
+        glitchLines.push({
+          y: Math.random() * h,
+          w: 20 + Math.random() * (w * 0.4),
+          x: Math.random() * w,
+          life: 3 + Math.floor(Math.random() * 4),
+          color: `rgba(${gr},${gg},${gb},${0.12 + Math.random() * 0.1})`
+        });
       }
     }
 
-    // Active voice indicators — highlight corresponding frequency regions
+    // Draw glitch lines (behind bars)
+    for (let gi = glitchLines.length - 1; gi >= 0; gi--) {
+      const gl = glitchLines[gi];
+      ctx.fillStyle = gl.color;
+      ctx.fillRect(gl.x, gl.y, gl.w, 1 + Math.random());
+      gl.life--;
+      if (gl.life <= 0) glitchLines.splice(gi, 1);
+    }
+    if (glitchLines.length > 40) glitchLines.splice(0, glitchLines.length - 40);
+
+    // === Draw 3D extruded bars ===
+    for (let i = 0; i < barCount; i++) {
+      const barH = barBounce[i];
+      if (barH < 1) continue;
+
+      const bx = barMargin + i * barW;
+      const by = h - barH;
+      const bw = barW - 1;
+
+      // Frozen shimmer
+      let alpha = 0.85;
+      if (frozen) {
+        const shimmer = 0.5 + 0.5 * Math.sin(frozenGlowPhase * 2 + i * 0.15);
+        alpha = shimmer * 0.9;
+      }
+
+      const [fr, fg, fb] = skin.bar(i, barCount);
+      const [tr, tg, tb] = skin.barTop(i, barCount);
+      const [sr, sg, sb] = skin.barSide(i, barCount);
+
+      // Back glow (subtle bloom)
+      ctx.fillStyle = `rgba(${fr},${fg},${fb},${alpha * 0.08})`;
+      ctx.fillRect(bx - 3, by - 3, bw + 6 + dxOff, barH + 6);
+
+      // RIGHT SIDE FACE (darker — depth)
+      ctx.fillStyle = `rgba(${sr},${sg},${sb},${alpha * 0.9})`;
+      ctx.beginPath();
+      ctx.moveTo(bx + bw, by);
+      ctx.lineTo(bx + bw + dxOff, by + dyOff);
+      ctx.lineTo(bx + bw + dxOff, h + dyOff);
+      ctx.lineTo(bx + bw, h);
+      ctx.closePath();
+      ctx.fill();
+
+      // TOP FACE (brighter — plastic sheen)
+      ctx.fillStyle = `rgba(${tr},${tg},${tb},${alpha * 0.7})`;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + dxOff, by + dyOff);
+      ctx.lineTo(bx + bw + dxOff, by + dyOff);
+      ctx.lineTo(bx + bw, by);
+      ctx.closePath();
+      ctx.fill();
+
+      // FRONT FACE (main color)
+      ctx.fillStyle = `rgba(${fr},${fg},${fb},${alpha})`;
+      ctx.fillRect(bx, by, bw, barH);
+
+      // Plastic highlight stripe (glossy band near top of front face)
+      if (barH > 8) {
+        const hlH = Math.min(barH * 0.15, 6);
+        ctx.fillStyle = `rgba(255,255,255,${alpha * 0.12})`;
+        ctx.fillRect(bx + 1, by + 2, bw - 2, hlH);
+      }
+
+      // Bright cap line (top edge)
+      ctx.fillStyle = `rgba(${tr},${tg},${tb},${alpha})`;
+      ctx.fillRect(bx, by, bw, 1);
+    }
+
+    // Active voice indicators
     if (frozen && activeVoices.size > 0) {
       const [gr, gg, gb] = skin.glow;
       activeVoices.forEach((voice, midi) => {
@@ -620,13 +704,12 @@ const Spectral = (() => {
         const barIndex = Math.floor(binIndex / binStep);
 
         if (barIndex >= 0 && barIndex < barCount) {
-          // Glow pulse around played frequency
           const pulse = 0.5 + 0.5 * Math.sin(frozenGlowPhase * 4);
-          const glowWidth = barWidth * 6;
-          const cx = barIndex * barWidth + barWidth / 2;
+          const glowWidth = barW * 8;
+          const cx = barMargin + barIndex * barW + barW / 2;
 
           const grad = ctx.createRadialGradient(cx, h * 0.5, 0, cx, h * 0.5, glowWidth);
-          grad.addColorStop(0, `rgba(${gr},${gg},${gb},${0.15 * pulse})`);
+          grad.addColorStop(0, `rgba(${gr},${gg},${gb},${0.12 * pulse})`);
           grad.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = grad;
           ctx.fillRect(cx - glowWidth, 0, glowWidth * 2, h);
@@ -646,6 +729,12 @@ const Spectral = (() => {
       ctx.lineTo(w, 12);
       ctx.stroke();
       ctx.setLineDash([]);
+    }
+
+    // Scanline overlay (subtle punk grain)
+    ctx.fillStyle = 'rgba(0,0,0,0.04)';
+    for (let y = 0; y < h; y += 2) {
+      ctx.fillRect(0, y, w, 1);
     }
 
     animFrame = requestAnimationFrame(render);
@@ -671,10 +760,8 @@ const Spectral = (() => {
     resize();
     lastTime = 0;
 
-    // Start default source
     if (currentSource === 'drone') startDrone();
 
-    // Clear canvas
     if (ctx && canvas) {
       ctx.fillStyle = SKINS[currentSkin].bg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -690,7 +777,6 @@ const Spectral = (() => {
       animFrame = null;
     }
 
-    // Release all voices
     activeVoices.forEach((voice, midi) => releaseVoice(midi));
     heldKeys.clear();
 

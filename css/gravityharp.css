@@ -1,50 +1,50 @@
-/* gravityharp.css — Gravity-driven string instrument
-   Dark void. Luminous strings. Falling particles. */
+/* gravityharp.css — Gravity Harp
+   Cosmic gravity well. Void / Nebula / Quasar skins. */
 
 /* === SKIN VARIABLES === */
 .skin-void {
-  --gh-bg: #08060e;
-  --gh-stage: #06040a;
-  --gh-accent: #b060ff;
-  --gh-string: rgba(176, 96, 255, 0.6);
-  --gh-string-glow: #b060ff;
-  --gh-particle: #e0c0ff;
-  --gh-text: #8070a0;
-  --gh-text-bright: #c0b0e0;
-  --gh-toolbar: #0a0810;
-  --gh-toolbar-border: #1a1528;
-  --gh-btn: #141020;
-  --gh-btn-hover: #1e1830;
+  --gh-bg: #050508;
+  --gh-stage: #040406;
+  --gh-accent: #b0b8d0;
+  --gh-string: rgba(170, 180, 200, 0.6);
+  --gh-string-glow: #c0c8e0;
+  --gh-particle: #d0d8f0;
+  --gh-text: #607088;
+  --gh-text-bright: #a0b0c8;
+  --gh-toolbar: #08080c;
+  --gh-toolbar-border: #16182a;
+  --gh-btn: #0c0e18;
+  --gh-btn-hover: #141828;
 }
 
-.skin-aurora {
-  --gh-bg: #060a10;
-  --gh-stage: #040810;
-  --gh-accent: #40d8a0;
-  --gh-string: rgba(64, 216, 160, 0.6);
-  --gh-string-glow: #40d8a0;
-  --gh-particle: #a0ffe0;
-  --gh-text: #608090;
-  --gh-text-bright: #a0d0c0;
-  --gh-toolbar: #080c14;
-  --gh-toolbar-border: #142028;
-  --gh-btn: #0c1420;
-  --gh-btn-hover: #142030;
+.skin-nebula {
+  --gh-bg: #080604;
+  --gh-stage: #060503;
+  --gh-accent: #dcb050;
+  --gh-string: rgba(220, 175, 70, 0.6);
+  --gh-string-glow: #f0c060;
+  --gh-particle: #ffd880;
+  --gh-text: #907848;
+  --gh-text-bright: #c8a868;
+  --gh-toolbar: #0c0a06;
+  --gh-toolbar-border: #281e0c;
+  --gh-btn: #181208;
+  --gh-btn-hover: #241c10;
 }
 
-.skin-ember {
-  --gh-bg: #0e0806;
-  --gh-stage: #0a0604;
-  --gh-accent: #ff6840;
-  --gh-string: rgba(255, 104, 64, 0.6);
-  --gh-string-glow: #ff6840;
-  --gh-particle: #ffc0a0;
-  --gh-text: #a08070;
-  --gh-text-bright: #d0b0a0;
-  --gh-toolbar: #100a08;
-  --gh-toolbar-border: #281810;
-  --gh-btn: #1a1008;
-  --gh-btn-hover: #281810;
+.skin-quasar {
+  --gh-bg: #040508;
+  --gh-stage: #030407;
+  --gh-accent: #608cf0;
+  --gh-string: rgba(70, 140, 240, 0.6);
+  --gh-string-glow: #80a0ff;
+  --gh-particle: #b080ff;
+  --gh-text: #506090;
+  --gh-text-bright: #8098c0;
+  --gh-toolbar: #06080e;
+  --gh-toolbar-border: #101830;
+  --gh-btn: #0a1020;
+  --gh-btn-hover: #121c30;
 }
 
 /* === BODY === */
@@ -167,9 +167,9 @@
   transition: border-color 0.15s;
 }
 
-.gh-skin-btn[data-skin="void"] { background: #b060ff; }
-.gh-skin-btn[data-skin="aurora"] { background: #40d8a0; }
-.gh-skin-btn[data-skin="ember"] { background: #ff6840; }
+.gh-skin-btn[data-skin="void"] { background: #b0b8d0; }
+.gh-skin-btn[data-skin="nebula"] { background: #dcb050; }
+.gh-skin-btn[data-skin="quasar"] { background: #608cf0; }
 
 .gh-skin-btn.active {
   border-color: rgba(255,255,255,0.5);

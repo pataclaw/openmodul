@@ -446,6 +446,13 @@
             </div>
             <div class="nullamp-spacer"></div>
             <div class="nullamp-ctrl-group">
+              <label>Mode</label>
+              <div class="nullamp-mode-toggle" id="nullamp-mode-toggle">
+                <button class="nullamp-mode-btn active" data-mode="0">I</button>
+                <button class="nullamp-mode-btn" data-mode="1">II</button>
+              </div>
+            </div>
+            <div class="nullamp-ctrl-group">
               <label>Color</label>
               <select id="nullamp-scheme"></select>
             </div>
@@ -494,7 +501,7 @@
     </div>
 
     <!-- ========== GRAVITY HARP (chromeless — void instrument) ========== -->
-    <div id="wm-gravityharp" class="wm-window wm-chromeless" style="--wm-accent: #b060ff;">
+    <div id="wm-gravityharp" class="wm-window wm-chromeless" style="--wm-accent: #b0b8d0;">
       <div class="wm-content">
         <div id="gravityharp-body" class="skin-void">
           <div class="gh-toolbar">
@@ -526,8 +533,8 @@
             <div class="gh-skin-selector">
               <span class="gh-skin-label">Skin</span>
               <button class="gh-skin-btn active" data-skin="void" title="Void"></button>
-              <button class="gh-skin-btn" data-skin="aurora" title="Aurora"></button>
-              <button class="gh-skin-btn" data-skin="ember" title="Ember"></button>
+              <button class="gh-skin-btn" data-skin="nebula" title="Nebula"></button>
+              <button class="gh-skin-btn" data-skin="quasar" title="Quasar"></button>
             </div>
           </div>
           <div class="gh-stage">
@@ -538,9 +545,9 @@
     </div>
 
     <!-- ========== SPECTRAL (chromeless — spectral freezer) ========== -->
-    <div id="wm-spectral" class="wm-window wm-chromeless" style="--wm-accent: #ff4080;">
+    <div id="wm-spectral" class="wm-window wm-chromeless" style="--wm-accent: #ff2080;">
       <div class="wm-content">
-        <div id="spectral-body" class="skin-aurora">
+        <div id="spectral-body" class="skin-acid">
           <div class="sp-toolbar">
             <span class="sp-brand">Spectral</span>
             <div class="sp-toolbar-group">
@@ -565,9 +572,9 @@
             <div class="sp-toolbar-spacer"></div>
             <div class="sp-skin-selector">
               <span class="sp-skin-label">Skin</span>
-              <button class="sp-skin-btn active" data-skin="aurora" title="Aurora"></button>
-              <button class="sp-skin-btn" data-skin="solar" title="Solar"></button>
-              <button class="sp-skin-btn" data-skin="void" title="Void"></button>
+              <button class="sp-skin-btn active" data-skin="acid" title="Acid"></button>
+              <button class="sp-skin-btn" data-skin="chrome" title="Chrome"></button>
+              <button class="sp-skin-btn" data-skin="noise" title="Noise"></button>
             </div>
           </div>
           <div class="sp-display">
@@ -596,7 +603,7 @@
   <script src="js/ui.js"></script>
 
   <!-- Nullamp visualizer -->
-  <script src="js/nullamp.js?v=17"></script>
+  <script src="js/nullamp.js?v=24"></script>
 
   <!-- Gum Modul effects pedal -->
   <script src="js/gummodul.js"></script>

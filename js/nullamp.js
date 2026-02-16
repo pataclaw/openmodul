@@ -213,6 +213,7 @@ const Nullamp = (() => {
   let isPlaying = false;
   let startTime = 0, pauseOffset = 0;
   let particles = [];
+  let currentVizMode = 0; // 0 = Theme I (classic), 1 = Theme II (stutter)
 
   // === MEDIA STATE ===
   let mediaImages = [];       // Rolling buffer of {img, canvas, ctx, loaded, id}
@@ -1717,6 +1718,15 @@ const Nullamp = (() => {
 
       loadMediaImages(audioSeed);
 
+      // Reset Theme II/III state for new song
+      imgPlanes = [];
+      dustParticles = [];
+      ribbons = [];
+      ribbonDebris = [];
+      splatSeedApplied = false;
+      moshPrevFrame2 = null;
+      splatCam = { theta: 0, phi: 0.2, radius: 280, shake: 0 };
+
       playFromOffset(0);
     }).catch(err => {
       console.error('Nullamp: decode failed', err);
@@ -2003,6 +2013,787 @@ const Nullamp = (() => {
     ctx.restore();
   }
 
+  // === THEME II: GAUSSIAN SPLAT RECONSTRUCTION ===
+  // Images/videos reconstructed from thousands of tiny colored orbs in 3D space.
+  // Each media source becomes a floating plane of densely packed particles.
+  // Camera orbits. Beats scatter the atoms. Soundwave cuts through.
+
+  // Image planes — each reconstructs one media source from particles
+  let imgPlanes = [];            // [{cx,cy,cz, rx,ry, splats:[], mediaIdx, age}]
+  const PLANE_SIZE = 120;        // world units per plane dimension
+  const GRID_RES = 32;           // 32x32 = 1024 splats per image plane
+  const MAX_PLANES = 5;          // active planes at once
+  let splatCam = { theta: 0, phi: 0.2, radius: 280, shake: 0 };
+  let splatDrift = 0;
+  let splatSeedApplied = false;
+  let moshPrevFrame2 = null;
+  let lastPlaneSwap = 0;
+
+  // Ambient dust particles floating in the void
+  let dustParticles = [];
+  const DUST_COUNT = 80;
+
+  // PS2-style ribbon trails — smooth counter-orbiting, crash & shatter
+  let ribbons = [];
+  const RIBBON_COUNT = 3;
+  const RIBBON_TRAIL = 100;
+  let ribbonDebris = []; // shattered pieces that float off after collision
+
+  // === PIN-UP ASCII DANCERS — Betty Boop style silhouettes ===
+  const DANCE_A = [
+    // 0: standing sassy, hand on hip
+    ["  ,@.  ",
+     "  /|\\  ",
+     " ( | ) ",
+     "  \\|/  ",
+     "   |   ",
+     "  ( )  ",
+     "  | |  ",
+     " _/ \\_ "],
+    // 1: arms up celebrating
+    ["\\ ,@. /",
+     "  \\|/  ",
+     " ( | ) ",
+     "  \\|/  ",
+     "   |   ",
+     "  / \\  ",
+     " |   | ",
+     "_/   \\_"],
+    // 2: hip pop right
+    ["  ,@.  ",
+     "  /|)  ",
+     " ( |   ",
+     "  \\|\\  ",
+     "   )   ",
+     "  / |  ",
+     " |   | ",
+     "_/  _/ "],
+    // 3: kick right
+    ["  ,@.  ",
+     "  /|\\_-",
+     " ( |   ",
+     "  \\|   ",
+     "   |   ",
+     "  /    ",
+     " |     ",
+     "_/     "],
+    // 4: arms out wide
+    ["  ,@.  ",
+     "--/|\\--",
+     " ( | ) ",
+     "  \\|/  ",
+     "   |   ",
+     "  ( )  ",
+     "  | |  ",
+     " _/ \\_ "],
+    // 5: crouch bounce
+    ["  ,@.  ",
+     " /\\|/\\ ",
+     "( | | )",
+     "  \\|/  ",
+     "  /|\\  ",
+     " / | \\ ",
+     "|  V  |"],
+  ];
+
+  const DANCE_B = [
+    // 0: standing, weight on one leg
+    ["  .@,  ",
+     "  )|(  ",
+     "  / \\  ",
+     " ( | ) ",
+     "  \\|/  ",
+     "  / \\  ",
+     " |   | ",
+     " /   \\ "],
+    // 1: one arm up, sway
+    ["  .@, /",
+     "  )|(/ ",
+     "  / \\  ",
+     " ( | ) ",
+     "  \\|/  ",
+     "  / \\  ",
+     " |   | ",
+     " /   \\ "],
+    // 2: other arm up, sway
+    ["\\ .@,  ",
+     " \\)|(  ",
+     "  / \\  ",
+     " ( | ) ",
+     "  \\|/  ",
+     "  / \\  ",
+     " |   | ",
+     " /   \\ "],
+    // 3: kick side
+    ["  .@,  ",
+     "  )|(  ",
+     "  / \\  ",
+     " ( | )\\",
+     "  \\|/__",
+     "  /    ",
+     " |     ",
+     " /     "],
+    // 4: both arms up
+    [" \\.@,/ ",
+     "  )|(  ",
+     " //|\\\\ ",
+     " ( | ) ",
+     "  \\|/  ",
+     "  / \\  ",
+     " |   | ",
+     " /   \\ "],
+    // 5: low crouch
+    ["  .@,  ",
+     "  )|(  ",
+     " /( )\\ ",
+     "  \\|/  ",
+     "  /|\\  ",
+     " / | \\ ",
+     "/  V  \\"],
+  ];
+
+  // Dancer instances
+  let dancerInstances = [
+    { type: 0, xPct: 0.18, frameOff: 0, bounce: 0 },
+    { type: 1, xPct: 0.50, frameOff: 2, bounce: 0 },
+    { type: 0, xPct: 0.82, frameOff: 4, bounce: 0 },
+  ];
+  let dancerFrame = 0;
+  let lastDanceBeat = 0;
+
+  // Per-song camera personality
+  let camOrbitSpeed = 0.003;
+  let camBobSpeed = 0.003;
+  let camBobAmp = 0.25;
+  let camRadiusBase = 280;
+  let camLissA = 1, camLissB = 1;
+
+  function applySplatSeed() {
+    if (!seededRng || splatSeedApplied) return;
+    splatSeedApplied = true;
+    const rng = mulberry32(audioSeed + 999);
+    camOrbitSpeed = 0.0005 + rng() * 0.0015;
+    camBobSpeed = 0.001 + rng() * 0.004;
+    camBobAmp = 0.05 + rng() * 0.15;
+    camRadiusBase = 240 + rng() * 100;
+    camLissA = 1 + Math.floor(rng() * 3);
+    camLissB = 1 + Math.floor(rng() * 2);
+    initRibbons(rng);
+  }
+
+  function initRibbons(rng) {
+    if (!rng) rng = Math.random;
+    ribbons = [];
+    ribbonDebris = [];
+    for (let i = 0; i < RIBBON_COUNT; i++) {
+      const dir = (i % 2 === 0) ? 1 : -1; // counter-orbiting
+      const phase = rng() * Math.PI * 2;
+      ribbons.push({
+        // Smooth elliptical orbit in 3D
+        orbitRadius: 80 + rng() * 60,
+        orbitTilt: 0.2 + rng() * 0.6,       // how tilted the orbit plane is
+        orbitEcc: 0.3 + rng() * 0.4,         // eccentricity — vertical squish
+        orbitSpeed: (0.004 + rng() * 0.003) * dir,
+        bobFreq: 0.003 + rng() * 0.004,
+        bobAmp: 20 + rng() * 30,
+        phase,
+        trail: [],
+        hueT: i / RIBBON_COUNT,
+        dir,
+        cooldown: 0, // frames until next collision allowed
+      });
+    }
+  }
+
+  // Build a plane of splats that reconstructs a media image
+  function buildImagePlane(mediaIdx, cx, cy, cz, rx, ry) {
+    const loaded = mediaImages.filter(m => m.loaded);
+    const src = loaded[mediaIdx % loaded.length];
+    if (!src || !src.canvas) return null;
+
+    const splats = [];
+    const half = PLANE_SIZE / 2;
+    const step = PLANE_SIZE / GRID_RES;
+    const cosR = Math.cos(ry), sinR = Math.sin(ry);
+    const cosP = Math.cos(rx), sinP = Math.sin(rx);
+
+    // Batch-read the image data once (much faster than per-pixel getImageData)
+    const imgData = src.ctx.getImageData(0, 0, 400, 400).data;
+
+    for (let gy = 0; gy < GRID_RES; gy++) {
+      for (let gx = 0; gx < GRID_RES; gx++) {
+        // Sample color from the media at this grid position
+        const imgX = Math.floor((gx / GRID_RES) * 400);
+        const imgY = Math.floor((gy / GRID_RES) * 400);
+        const idx = (imgY * 400 + imgX) * 4;
+        const r = imgData[idx], g = imgData[idx + 1], b = imgData[idx + 2];
+
+        // Local position on the plane (centered)
+        const lx = gx * step - half;
+        const ly = -(gy * step - half); // flip Y so image is right-side up
+
+        // Rotate local position by plane orientation then translate
+        const rz = lx * sinR;
+        const rx2 = lx * cosR;
+        const ry2 = ly * cosP;
+        const rz2 = rz * cosP - ly * sinP;
+
+        const homeX = cx + rx2;
+        const homeY = cy + ry2;
+        const homeZ = cz + rz2;
+
+        // Brightness drives Z-displacement (3D relief) and splat size
+        const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+        const zPush = (brightness - 0.3) * 18; // bright pops forward, dark recedes
+        const cosRx = Math.cos(rx), sinRx = Math.sin(rx);
+        // Push along the plane's forward normal (local Z axis rotated by plane orientation)
+        const fwdX = sinR * sinRx;
+        const fwdY = cosRx;
+        const fwdZ = cosR * sinRx;
+
+        splats.push({
+          homeX: homeX + fwdX * zPush,
+          homeY: homeY + fwdY * zPush,
+          homeZ: homeZ + fwdZ * zPush,
+          x: homeX + fwdX * zPush,
+          y: homeY + fwdY * zPush,
+          z: homeZ + fwdZ * zPush,
+          vx: 0, vy: 0, vz: 0,
+          r, g, b, brightness,
+          size: step * (0.45 + brightness * 0.35),
+        });
+      }
+    }
+
+    return { cx, cy, cz, rx, ry, splats, mediaIdx, age: 0 };
+  }
+
+  function initPlanes() {
+    imgPlanes = [];
+    const loaded = mediaImages.filter(m => m.loaded);
+    if (loaded.length === 0) return;
+
+    for (let i = 0; i < Math.min(MAX_PLANES, loaded.length); i++) {
+      const angle = (i / MAX_PLANES) * Math.PI * 2;
+      const radius = 90 + i * 20;
+      const cx = Math.cos(angle) * radius;
+      const cz = Math.sin(angle) * radius;
+      const cy = (Math.random() - 0.5) * 40;
+      const ry = angle + Math.PI; // face center
+      const rx = (Math.random() - 0.5) * 0.3;
+      const plane = buildImagePlane(i, cx, cy, cz, rx, ry);
+      if (plane) imgPlanes.push(plane);
+    }
+  }
+
+  // Refresh a plane's colors from its current (possibly updated) media source
+  function refreshPlaneColors(plane) {
+    const loaded = mediaImages.filter(m => m.loaded);
+    if (loaded.length === 0) return;
+    const src = loaded[plane.mediaIdx % loaded.length];
+    if (!src || !src.canvas || !src.loaded) return;
+
+    const imgData = src.ctx.getImageData(0, 0, 400, 400).data;
+    let si = 0;
+    for (let gy = 0; gy < GRID_RES; gy++) {
+      for (let gx = 0; gx < GRID_RES; gx++) {
+        if (si >= plane.splats.length) break;
+        const imgX = Math.floor((gx / GRID_RES) * 400);
+        const imgY = Math.floor((gy / GRID_RES) * 400);
+        const idx = (imgY * 400 + imgX) * 4;
+        const sr = imgData[idx], sg = imgData[idx + 1], sb = imgData[idx + 2];
+        plane.splats[si].r = sr;
+        plane.splats[si].g = sg;
+        plane.splats[si].b = sb;
+        plane.splats[si].brightness = (sr * 0.299 + sg * 0.587 + sb * 0.114) / 255;
+        si++;
+      }
+    }
+  }
+
+  // Project 3D → 2D via orbiting camera
+  function projectSplat(sx, sy, sz, w, h) {
+    const ct = Math.cos(splatCam.theta), st = Math.sin(splatCam.theta);
+    const cp = Math.cos(splatCam.phi), sp = Math.sin(splatCam.phi);
+
+    const camX = splatCam.radius * st * cp;
+    const camY = splatCam.radius * sp;
+    const camZ = splatCam.radius * ct * cp;
+
+    const dx = sx - camX, dy = sy - camY, dz = sz - camZ;
+    const fLen = Math.sqrt(camX * camX + camY * camY + camZ * camZ) || 1;
+    const fx = -camX / fLen, fy = -camY / fLen, fz = -camZ / fLen;
+
+    let rx = fz, rz = -fx;
+    const rLen = Math.sqrt(rx * rx + rz * rz) || 1;
+    rx /= rLen; rz /= rLen;
+
+    const ux = -rz * fy, uy = rz * fx - rx * fz, uz = rx * fy;
+
+    const ex = dx * rx + dz * rz;
+    const ey = dx * ux + dy * uy + dz * uz;
+    const ez = dx * fx + dy * fy + dz * fz;
+
+    if (ez < 5) return null;
+
+    const fov = 600;
+    const screenX = w / 2 + (ex / ez) * fov + splatCam.shake * (Math.random() - 0.5);
+    const screenY = h / 2 - (ey / ez) * fov + splatCam.shake * (Math.random() - 0.5);
+    return { x: screenX, y: screenY, scale: fov / ez, depth: ez };
+  }
+
+  function initDust() {
+    dustParticles = [];
+    for (let i = 0; i < DUST_COUNT; i++) {
+      dustParticles.push({
+        x: (Math.random() - 0.5) * 400,
+        y: (Math.random() - 0.5) * 400,
+        z: (Math.random() - 0.5) * 400,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: (Math.random() - 0.5) * 0.15,
+        vz: (Math.random() - 0.5) * 0.15,
+        size: 0.5 + Math.random() * 1.5,
+        alpha: 0.15 + Math.random() * 0.3,
+      });
+    }
+  }
+
+  function drawVisualizationStutter(w, h, data, freq, scheme, frame, beat, sens) {
+    updateVideoFrames();
+    applySplatSeed();
+    splatDrift += 0.01 + beat * 0.01;
+
+    let bassEnergy = 0, midEnergy = 0, highEnergy = 0;
+    if (freq) {
+      for (let i = 0; i < 8; i++) bassEnergy += freq[i];
+      bassEnergy = (bassEnergy / (8 * 255)) * (sens || 1);
+      for (let i = 20; i < 80; i++) midEnergy += freq[i];
+      midEnergy = (midEnergy / (60 * 255)) * (sens || 1);
+      for (let i = 100; i < 300; i++) highEnergy += freq[i];
+      highEnergy = (highEnergy / (200 * 255)) * (sens || 1);
+    }
+
+    // Build planes if we don't have any yet
+    const loaded = mediaImages.filter(m => m.loaded);
+    if (imgPlanes.length === 0 && loaded.length > 0) {
+      initPlanes();
+    }
+
+    // Init dust if needed
+    if (dustParticles.length === 0) initDust();
+
+    // Swap out oldest plane for fresh media periodically
+    if (frame - lastPlaneSwap > 300 && imgPlanes.length > 0 && loaded.length > 1) {
+      lastPlaneSwap = frame;
+      let oldest = 0;
+      for (let i = 1; i < imgPlanes.length; i++) {
+        if (imgPlanes[i].age > imgPlanes[oldest].age) oldest = i;
+      }
+      const old = imgPlanes[oldest];
+      old.mediaIdx = (old.mediaIdx + MAX_PLANES) % Math.max(1, loaded.length);
+      refreshPlaneColors(old);
+      old.age = 0;
+      advanceImage();
+    }
+
+    // Refresh video frames into planes (live video updates)
+    if (frame % 6 === 0) {
+      for (const plane of imgPlanes) {
+        const src = loaded[plane.mediaIdx % loaded.length];
+        if (src && src.type === 'video' && src.loaded) {
+          refreshPlaneColors(plane);
+        }
+      }
+    }
+
+    // === UPDATE CAMERA ===
+    splatCam.theta += camOrbitSpeed * (1 + midEnergy * 0.5);
+    splatCam.phi = Math.sin(splatDrift * camBobSpeed * 60 * camLissB) * camBobAmp;
+    splatCam.radius = Math.max(80, camRadiusBase - bassEnergy * 40 - beat * 20);
+    splatCam.shake = beat > 0.5 ? beat * 4 : splatCam.shake * 0.9;
+
+    // === 1. FADE ===
+    ctx.fillStyle = `rgba(0,0,0,${0.12 + beat * 0.08})`;
+    ctx.fillRect(0, 0, w, h);
+
+    // === 2. BACKGROUND FREQUENCY SPECTRUM ===
+    if (freq) {
+      ctx.save();
+      ctx.globalAlpha = 0.035 + bassEnergy * 0.025;
+      const barCount = 64;
+      const barW = w / barCount;
+      for (let i = 0; i < barCount; i++) {
+        const fi = Math.floor((i / barCount) * 256);
+        const val = freq[fi] / 255;
+        const barH = val * h * 0.5;
+        ctx.fillStyle = scheme.wave(i / barCount, frame);
+        ctx.fillRect(i * barW, h - barH, barW - 1, barH);
+      }
+      ctx.restore();
+    }
+
+    // === 3. DUST PARTICLES ===
+    ctx.save();
+    for (const d of dustParticles) {
+      d.x += d.vx + Math.sin(frame * 0.008 + d.z * 0.01) * 0.05;
+      d.y += d.vy + Math.cos(frame * 0.006 + d.x * 0.01) * 0.05;
+      d.z += d.vz;
+
+      // Wrap around
+      if (d.x > 200) d.x -= 400;
+      if (d.x < -200) d.x += 400;
+      if (d.y > 200) d.y -= 400;
+      if (d.y < -200) d.y += 400;
+      if (d.z > 200) d.z -= 400;
+      if (d.z < -200) d.z += 400;
+
+      // React to beat
+      if (beat > 0.5) {
+        d.vx += (Math.random() - 0.5) * 0.3;
+        d.vy += (Math.random() - 0.5) * 0.3;
+      }
+      d.vx *= 0.98;
+      d.vy *= 0.98;
+      d.vz *= 0.98;
+
+      const p = projectSplat(d.x, d.y, d.z, w, h);
+      if (!p || p.x < 0 || p.x > w || p.y < 0 || p.y > h) continue;
+      const sz = d.size * p.scale;
+      if (sz < 0.2) continue;
+      const depthFade = Math.min(1, 8 / Math.max(1, p.depth * 0.05));
+      ctx.globalAlpha = d.alpha * depthFade;
+      ctx.fillStyle = scheme.wave(0.3 + d.alpha, frame);
+      ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
+    }
+    ctx.restore();
+
+    // === 4. SLOW PLANE DRIFT ===
+    for (const plane of imgPlanes) {
+      // Very slow orbit around origin — keeps things alive
+      const driftSpeed = 0.0003 + midEnergy * 0.0002;
+      const angle = Math.atan2(plane.cz, plane.cx);
+      const radius = Math.sqrt(plane.cx * plane.cx + plane.cz * plane.cz);
+      const newAngle = angle + driftSpeed;
+      const newCx = Math.cos(newAngle) * radius;
+      const newCz = Math.sin(newAngle) * radius;
+      const dCx = newCx - plane.cx;
+      const dCz = newCz - plane.cz;
+      const dCy = Math.sin(frame * 0.005 + plane.mediaIdx) * 0.08;
+      // Move all splat home positions with the plane
+      for (const s of plane.splats) {
+        s.homeX += dCx;
+        s.homeZ += dCz;
+        s.homeY += dCy;
+      }
+      plane.cx = newCx;
+      plane.cz = newCz;
+      plane.cy += dCy;
+    }
+
+    // === 5. UPDATE SPLATS — spring back to home, scatter on beat ===
+    const allProjected = [];
+    for (const plane of imgPlanes) {
+      plane.age++;
+      for (const s of plane.splats) {
+        // Spring force toward home position (displaced by plane drift)
+        const spring = 0.04;
+        s.vx += (s.homeX - s.x) * spring;
+        s.vy += (s.homeY - s.y) * spring;
+        s.vz += (s.homeZ - s.z) * spring;
+
+        // Beat scatter — explode outward from plane center
+        if (beat > 0.5 && frame % 4 === 0) {
+          const dx = s.x - plane.cx;
+          const dy = s.y - plane.cy;
+          const dz = s.z - plane.cz;
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+          const scatter = beat * 1.2 + bassEnergy * 0.8;
+          s.vx += (dx / dist) * scatter * (0.5 + Math.random() * 0.5);
+          s.vy += (dy / dist) * scatter * (0.5 + Math.random() * 0.5);
+          s.vz += (dz / dist) * scatter * (0.5 + Math.random() * 0.5);
+        }
+
+        // High frequency shimmer — subtle jitter on bright splats
+        if (s.brightness > 0.6 && highEnergy > 0.15) {
+          s.vx += (Math.random() - 0.5) * highEnergy * 0.3;
+          s.vy += (Math.random() - 0.5) * highEnergy * 0.3;
+        }
+
+        // Dampen
+        s.vx *= 0.88;
+        s.vy *= 0.88;
+        s.vz *= 0.88;
+
+        // Integrate
+        s.x += s.vx;
+        s.y += s.vy;
+        s.z += s.vz;
+
+        // Project
+        const p = projectSplat(s.x, s.y, s.z, w, h);
+        if (!p) continue;
+        if (p.x < -50 || p.x > w + 50 || p.y < -50 || p.y > h + 50) continue;
+
+        allProjected.push({
+          x: p.x, y: p.y,
+          size: Math.max(0.5, s.size * p.scale),
+          r: s.r, g: s.g, b: s.b,
+          depth: p.depth,
+          brightness: s.brightness || 0,
+        });
+      }
+    }
+
+    // Sort back to front
+    allProjected.sort((a, b) => b.depth - a.depth);
+
+    // === 6. RENDER SPLATS ===
+    ctx.save();
+    for (const p of allProjected) {
+      const sz = p.size;
+      if (sz < 0.3) continue;
+      const depthFade = Math.min(1, 12 / Math.max(1, p.depth * 0.04));
+      ctx.globalAlpha = depthFade * 0.85;
+      ctx.fillStyle = `rgb(${p.r},${p.g},${p.b})`;
+      ctx.fillRect(Math.floor(p.x - sz / 2), Math.floor(p.y - sz / 2), Math.ceil(sz), Math.ceil(sz));
+    }
+    ctx.restore();
+
+    // === 7. BLOOM PASS — subtle additive glow on brightest splats ===
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of allProjected) {
+      if (p.brightness < 0.75 || p.size < 1.5) continue;
+      const bloomSize = p.size * (1.5 + bassEnergy * 0.4);
+      const depthFade = Math.min(1, 12 / Math.max(1, p.depth * 0.04));
+      ctx.globalAlpha = (p.brightness - 0.6) * 0.06 * depthFade;
+      ctx.fillStyle = `rgb(${p.r},${p.g},${p.b})`;
+      const bsz = Math.ceil(bloomSize * 2);
+      ctx.fillRect(Math.floor(p.x - bloomSize), Math.floor(p.y - bloomSize), bsz, bsz);
+    }
+    ctx.restore();
+
+    // === 8. PIN-UP ASCII DANCERS ===
+    {
+      const danceSets = [DANCE_A, DANCE_B];
+      // Advance frame on beat
+      if (beat > 0.5 && frame - lastDanceBeat > 6) {
+        lastDanceBeat = frame;
+        dancerFrame++;
+        for (const d of dancerInstances) d.bounce = 1.0;
+      }
+      // Slow auto-advance if no beats
+      if (frame - lastDanceBeat > 30 && frame % 20 === 0) {
+        dancerFrame++;
+        for (const d of dancerInstances) d.bounce = 0.4;
+      }
+
+      const fontSize = Math.max(9, Math.min(14, w * 0.028));
+      ctx.save();
+      ctx.font = `bold ${fontSize}px 'SF Mono','Cascadia Code','Fira Code','Consolas',monospace`;
+      ctx.textAlign = 'center';
+
+      for (const d of dancerInstances) {
+        d.bounce *= 0.88;
+        const frames = danceSets[d.type];
+        const fi = (dancerFrame + d.frameOff) % frames.length;
+        const pose = frames[fi];
+        const dx = d.xPct * w;
+        const baseY = h - fontSize * 1.2;
+        const bounceY = -d.bounce * fontSize * 2.5;
+        const swayX = Math.sin(splatDrift * 2 + d.frameOff) * 2;
+
+        ctx.fillStyle = scheme.primary;
+        ctx.globalAlpha = 0.2 + beat * 0.08 + d.bounce * 0.08;
+
+        for (let line = 0; line < pose.length; line++) {
+          const y = baseY + bounceY - (pose.length - 1 - line) * fontSize * 1.05;
+          ctx.fillText(pose[line], dx + swayX, y);
+        }
+
+        // Subtle reflection below
+        ctx.globalAlpha = 0.05 + d.bounce * 0.03;
+        for (let line = 0; line < Math.min(3, pose.length); line++) {
+          const y = baseY + 2 + line * fontSize * 1.05;
+          ctx.fillText(pose[pose.length - 1 - line], dx + swayX, y);
+        }
+      }
+      ctx.restore();
+    }
+
+    // === 9. PS2-STYLE RIBBON TRAILS — counter-orbiting, crash & shatter ===
+    if (ribbons.length === 0) initRibbons();
+
+    // Update ribbon positions — smooth elliptical orbits
+    for (const rb of ribbons) {
+      if (rb.cooldown > 0) rb.cooldown--;
+      const t = splatDrift;
+      const angle = t * rb.orbitSpeed + rb.phase;
+      const cosT = Math.cos(rb.orbitTilt), sinT = Math.sin(rb.orbitTilt);
+      // Elliptical orbit in tilted plane
+      const ox = Math.cos(angle) * rb.orbitRadius;
+      const oy = Math.sin(angle) * rb.orbitRadius * rb.orbitEcc;
+      const bob = Math.sin(t * rb.bobFreq + rb.phase) * rb.bobAmp;
+      // Tilt the orbit plane
+      const hx = ox;
+      const hy = oy * cosT + bob;
+      const hz = oy * sinT;
+
+      rb.trail.push({ x: hx, y: hy, z: hz });
+      if (rb.trail.length > RIBBON_TRAIL) rb.trail.shift();
+    }
+
+    // Collision detection between ribbon heads
+    for (let i = 0; i < ribbons.length; i++) {
+      const ra = ribbons[i];
+      if (ra.cooldown > 0 || ra.trail.length < 3) continue;
+      const ha = ra.trail[ra.trail.length - 1];
+      for (let j = i + 1; j < ribbons.length; j++) {
+        const rb2 = ribbons[j];
+        if (rb2.cooldown > 0 || rb2.trail.length < 3) continue;
+        const hb = rb2.trail[rb2.trail.length - 1];
+        const dx = ha.x - hb.x, dy = ha.y - hb.y, dz = ha.z - hb.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (dist < 25) {
+          // CRASH — spawn debris from both trails
+          const midX = (ha.x + hb.x) / 2, midY = (ha.y + hb.y) / 2, midZ = (ha.z + hb.z) / 2;
+          const debrisCount = 12 + Math.floor(bassEnergy * 8);
+          for (let d = 0; d < debrisCount; d++) {
+            // Sample a color from the trail position
+            const srcTrail = (d % 2 === 0) ? ra : rb2;
+            const si = Math.floor(Math.random() * srcTrail.trail.length);
+            const srcPt = srcTrail.trail[si];
+            ribbonDebris.push({
+              x: midX + (Math.random() - 0.5) * 10,
+              y: midY + (Math.random() - 0.5) * 10,
+              z: midZ + (Math.random() - 0.5) * 10,
+              vx: (Math.random() - 0.5) * 3,
+              vy: (Math.random() - 0.5) * 3,
+              vz: (Math.random() - 0.5) * 3,
+              life: 80 + Math.floor(Math.random() * 60),
+              maxLife: 80 + Math.floor(Math.random() * 60),
+              hueT: (d % 2 === 0) ? ra.hueT : rb2.hueT,
+              size: 1 + Math.random() * 2,
+            });
+          }
+          // Reset both ribbons — clear trails so they regrow
+          ra.trail = [];
+          rb2.trail = [];
+          ra.cooldown = 40;
+          rb2.cooldown = 40;
+          // Shift phase so they don't instantly re-collide
+          ra.phase += 0.5 + Math.random() * 1.0;
+          rb2.phase += 0.5 + Math.random() * 1.0;
+          // Camera shake on crash
+          splatCam.shake = Math.max(splatCam.shake, 6);
+        }
+      }
+    }
+
+    // Update & render debris
+    ctx.save();
+    for (let i = ribbonDebris.length - 1; i >= 0; i--) {
+      const d = ribbonDebris[i];
+      d.x += d.vx; d.y += d.vy; d.z += d.vz;
+      d.vx *= 0.97; d.vy *= 0.97; d.vz *= 0.97;
+      d.life--;
+      if (d.life <= 0) { ribbonDebris.splice(i, 1); continue; }
+
+      const p = projectSplat(d.x, d.y, d.z, w, h);
+      if (!p || p.x < -20 || p.x > w + 20 || p.y < -20 || p.y > h + 20) continue;
+      const fade = d.life / d.maxLife;
+      const depthFade = Math.min(1, 10 / Math.max(1, p.depth * 0.04));
+      ctx.globalAlpha = fade * fade * 0.5 * depthFade;
+      ctx.fillStyle = scheme.wave(d.hueT + fade * 0.2, frame);
+      const sz = d.size * p.scale;
+      ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
+    }
+    // Cap debris count
+    if (ribbonDebris.length > 120) ribbonDebris.splice(0, ribbonDebris.length - 120);
+    ctx.restore();
+
+    // Render ribbon trails — project once, draw smooth curves
+    ctx.save();
+    for (const rb of ribbons) {
+      const trail = rb.trail;
+      const len = trail.length;
+      if (len < 3) continue;
+
+      // Project all trail points once
+      const pts = [];
+      for (let i = 0; i < len; i++) {
+        pts.push(projectSplat(trail[i].x, trail[i].y, trail[i].z, w, h));
+      }
+
+      // Full trail — thin, fading
+      ctx.beginPath();
+      if (pts[0]) ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < len - 1; i++) {
+        if (!pts[i] || !pts[i + 1]) continue;
+        const mx = (pts[i].x + pts[i + 1].x) / 2;
+        const my = (pts[i].y + pts[i + 1].y) / 2;
+        ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+      }
+      ctx.strokeStyle = scheme.wave(rb.hueT, frame);
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.25;
+      ctx.stroke();
+
+      // Head section — last 30%, brighter and thicker
+      const headStart = Math.floor(len * 0.7);
+      if (headStart < len - 1 && pts[headStart]) {
+        ctx.beginPath();
+        ctx.moveTo(pts[headStart].x, pts[headStart].y);
+        for (let i = headStart + 1; i < len - 1; i++) {
+          if (!pts[i] || !pts[i + 1]) continue;
+          const mx = (pts[i].x + pts[i + 1].x) / 2;
+          const my = (pts[i].y + pts[i + 1].y) / 2;
+          ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+        }
+        ctx.strokeStyle = scheme.wave(rb.hueT + 0.15, frame);
+        ctx.lineWidth = 2.5 + bassEnergy;
+        ctx.globalAlpha = 0.4;
+        ctx.stroke();
+      }
+
+      // Head dot
+      const hp = pts[len - 1];
+      if (hp) {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.1;
+        ctx.fillStyle = scheme.wave(rb.hueT + 0.2, frame);
+        const hsz = 2.5 + bassEnergy * 1.5;
+        ctx.fillRect(hp.x - hsz, hp.y - hsz, hsz * 2, hsz * 2);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+    ctx.restore();
+
+    // === 10. WAVEFORM cutting through ===
+    ctx.save();
+    ctx.beginPath();
+    const waveSpan = 200;
+    for (let i = 0; i <= 120; i++) {
+      const t = i / 120;
+      const di = Math.floor(t * data.length);
+      const sample = (data[di] / 128 - 1) * sens;
+      const wp = { x: (t - 0.5) * waveSpan, y: sample * 50, z: 0 };
+      const p = projectSplat(wp.x, wp.y, wp.z, w, h);
+      if (!p) continue;
+      if (i === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    }
+    ctx.strokeStyle = scheme.wave(0.5, frame);
+    ctx.lineWidth = 1.5 + beat * 2;
+    ctx.globalAlpha = 0.3 + beat * 0.15;
+    ctx.stroke();
+    ctx.restore();
+
+    // === 11. KEEP MEDIA FLOWING ===
+    if (loaded.length <= PREFETCH_AT) prefetchMedia();
+    if (frame % 60 === 0) maintainVideoPool();
+  }
+
   // === POST-PROCESSING ===
   function postProcess(w, h) {
     // Scanlines
@@ -2053,7 +2844,11 @@ const Nullamp = (() => {
     const beat = detectBeat();
     const scheme = COLOR_SCHEMES[currentScheme];
 
-    drawVisualization(w, h, dataArray, freqArray, scheme, frameCount, beat, sensitivity);
+    if (currentVizMode === 1) {
+      drawVisualizationStutter(w, h, dataArray, freqArray, scheme, frameCount, beat, sensitivity);
+    } else {
+      drawVisualization(w, h, dataArray, freqArray, scheme, frameCount, beat, sensitivity);
+    }
     postProcess(w, h);
 
     frameCount++;
@@ -2094,6 +2889,26 @@ const Nullamp = (() => {
     const fileInput = document.getElementById('nullamp-file');
     const dropZone = document.getElementById('nullamp-dropzone');
     const display = document.getElementById('nullamp-display');
+
+    // Mode toggle (Theme I / II)
+    const modeToggle = document.getElementById('nullamp-mode-toggle');
+    if (modeToggle) {
+      modeToggle.addEventListener('click', (e) => {
+        const btn = e.target.closest('.nullamp-mode-btn');
+        if (!btn) return;
+        const mode = parseInt(btn.dataset.mode);
+        currentVizMode = mode;
+        modeToggle.querySelectorAll('.nullamp-mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        // Reset all theme buffers on mode switch
+        imgPlanes = [];
+        dustParticles = [];
+        ribbons = [];
+        ribbonDebris = [];
+        splatCam = { theta: 0, phi: 0.2, radius: 280, shake: 0 };
+        moshPrevFrame2 = null;
+      });
+    }
 
     if (schemeSel) {
       COLOR_SCHEMES.forEach((s, i) => {

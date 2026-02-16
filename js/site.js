@@ -49,19 +49,19 @@ const Site = (() => {
       id: 'gravityharp',
       name: 'Gravity Harp',
       category: 'INSTRUMENT',
-      accent: '#b060ff',
+      accent: '#b0b8d0',
       ready: true,
       labelGap: 0,
-      getPageBg: () => '#08060e'
+      getPageBg: () => '#050508'
     },
     {
       id: 'spectral',
       name: 'Spectral',
       category: 'INSTRUMENT',
-      accent: '#ff4080',
+      accent: '#ff2080',
       ready: true,
       labelGap: 0,
-      getPageBg: () => '#060a10'
+      getPageBg: () => '#0a0a0a'
     }
   ];
 

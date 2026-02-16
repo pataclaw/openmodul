@@ -1,71 +1,62 @@
 /* spectral.css — Spectral freezer / vocoder
-   Northern lights. Frozen frequencies. Wavetable keys. */
+   Breakbeat punk. 3D plastic blocks. Acid / Chrome / Noise skins. */
 
 /* === SKIN VARIABLES === */
-.skin-aurora {
-  --sp-bg: #060a10;
-  --sp-display: #040810;
-  --sp-accent: #40d8d0;
-  --sp-accent2: #a060ff;
-  --sp-text: #608090;
-  --sp-text-bright: #a0d0d0;
-  --sp-toolbar: #080c14;
-  --sp-toolbar-border: #142028;
-  --sp-btn: #0c1420;
-  --sp-btn-hover: #142030;
-  --sp-btn-active: #1a2840;
-  --sp-freeze: #ff4080;
-  --sp-key-white: #0c1824;
-  --sp-key-white-active: #1a3848;
-  --sp-key-black: #060c14;
-  --sp-key-black-active: #102030;
-  --sp-bar1: rgba(64, 216, 208, 0.8);
-  --sp-bar2: rgba(100, 140, 255, 0.8);
-  --sp-bar3: rgba(160, 96, 255, 0.8);
-}
-
-.skin-solar {
-  --sp-bg: #100806;
-  --sp-display: #0c0604;
-  --sp-accent: #ff8040;
-  --sp-accent2: #ff4060;
-  --sp-text: #a08070;
-  --sp-text-bright: #d0a890;
-  --sp-toolbar: #120a08;
-  --sp-toolbar-border: #281810;
-  --sp-btn: #1a1008;
-  --sp-btn-hover: #281810;
-  --sp-btn-active: #382818;
-  --sp-freeze: #ff4040;
-  --sp-key-white: #1a1008;
-  --sp-key-white-active: #2a1c10;
-  --sp-key-black: #0c0804;
-  --sp-key-black-active: #1a1008;
-  --sp-bar1: rgba(255, 128, 64, 0.8);
-  --sp-bar2: rgba(255, 80, 60, 0.8);
-  --sp-bar3: rgba(255, 200, 60, 0.8);
-}
-
-.skin-void {
+.skin-acid {
   --sp-bg: #0a0a0a;
+  --sp-display: #080808;
+  --sp-accent: #ff2080;
+  --sp-accent2: #40ff80;
+  --sp-text: #90506a;
+  --sp-text-bright: #e080a0;
+  --sp-toolbar: #0e0a0c;
+  --sp-toolbar-border: #2a1420;
+  --sp-btn: #1a0c14;
+  --sp-btn-hover: #28141e;
+  --sp-btn-active: #3a1c2a;
+  --sp-freeze: #40ff80;
+  --sp-key-white: #140c10;
+  --sp-key-white-active: #2a1420;
+  --sp-key-black: #0a0608;
+  --sp-key-black-active: #1a0c14;
+}
+
+.skin-chrome {
+  --sp-bg: #080808;
   --sp-display: #060606;
-  --sp-accent: #e0e0e0;
-  --sp-accent2: #808080;
-  --sp-text: #606060;
-  --sp-text-bright: #a0a0a0;
-  --sp-toolbar: #0e0e0e;
-  --sp-toolbar-border: #1a1a1a;
-  --sp-btn: #141414;
-  --sp-btn-hover: #1e1e1e;
-  --sp-btn-active: #282828;
+  --sp-accent: #4080ff;
+  --sp-accent2: #c0c8d0;
+  --sp-text: #607090;
+  --sp-text-bright: #90a8c0;
+  --sp-toolbar: #0a0c10;
+  --sp-toolbar-border: #182030;
+  --sp-btn: #0c1018;
+  --sp-btn-hover: #141c28;
+  --sp-btn-active: #1e2838;
+  --sp-freeze: #c0d0ff;
+  --sp-key-white: #0c1018;
+  --sp-key-white-active: #1a2438;
+  --sp-key-black: #060810;
+  --sp-key-black-active: #101820;
+}
+
+.skin-noise {
+  --sp-bg: #0a0808;
+  --sp-display: #080606;
+  --sp-accent: #ff4040;
+  --sp-accent2: #ffffff;
+  --sp-text: #906060;
+  --sp-text-bright: #d09090;
+  --sp-toolbar: #100a0a;
+  --sp-toolbar-border: #281414;
+  --sp-btn: #1a0e0e;
+  --sp-btn-hover: #281616;
+  --sp-btn-active: #382020;
   --sp-freeze: #ffffff;
-  --sp-key-white: #141414;
-  --sp-key-white-active: #222222;
-  --sp-key-black: #0a0a0a;
-  --sp-key-black-active: #181818;
-  --sp-bar1: rgba(224, 224, 224, 0.8);
-  --sp-bar2: rgba(160, 160, 160, 0.8);
-  --sp-bar3: rgba(200, 200, 200, 0.8);
+  --sp-key-white: #1a1010;
+  --sp-key-white-active: #2a1818;
+  --sp-key-black: #0c0808;
+  --sp-key-black-active: #1a1010;
 }
 
 /* === BODY === */
@@ -175,12 +166,12 @@
 
 .sp-freeze-btn:hover {
   background: var(--sp-freeze);
-  color: #fff;
+  color: #000;
 }
 
 .sp-freeze-btn.frozen {
   background: var(--sp-freeze);
-  color: #fff;
+  color: #000;
   animation: sp-pulse 2s ease-in-out infinite;
 }
 
@@ -214,9 +205,9 @@
   transition: border-color 0.15s;
 }
 
-.sp-skin-btn[data-skin="aurora"] { background: #40d8d0; }
-.sp-skin-btn[data-skin="solar"] { background: #ff8040; }
-.sp-skin-btn[data-skin="void"] { background: #c0c0c0; }
+.sp-skin-btn[data-skin="acid"] { background: #ff2080; }
+.sp-skin-btn[data-skin="chrome"] { background: #4080ff; }
+.sp-skin-btn[data-skin="noise"] { background: #ff4040; }
 
 .sp-skin-btn.active {
   border-color: rgba(255,255,255,0.5);
